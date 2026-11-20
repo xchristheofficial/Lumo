@@ -113,6 +113,82 @@ PASSAGES: list[tuple[str, str]] = [
     ("sound waves hearing", "Sound travels as pressure waves through air, water, and solids. The frequency of the wave determines pitch and the amplitude determines loudness. Human ears typically hear frequencies from about 20 to 20,000 hertz."),
     ("telescope astronomy light", "A telescope gathers and focuses light or other radiation from distant objects. Larger mirrors and lenses can collect more light, letting astronomers see fainter and farther targets. Space telescopes avoid the blurring caused by Earth's atmosphere."),
     ("photos camera lens image", "A camera captures light with a lens that focuses it onto a sensor. The aperture controls how much light enters and the shutter speed controls how long it is exposed. Both settings shape the brightness and motion of a photo."),
+    # ── countries & capitals ──────────────────────────────────────────────
+    ("france paris capital europe", "France is a country in Western Europe. Its capital is Paris, home of the Eiffel Tower. France is known for art, fashion, cuisine, and wine, and it is one of the most visited countries in the world."),
+    ("japan tokyo capital asia", "Japan is an island country in East Asia. Its capital is Tokyo, one of the largest metropolitan areas on Earth. Japan is famous for technology, sushi, cherry blossoms, and a rich tradition of art and literature."),
+    ("kenya nairobi capital africa", "Kenya is a country in East Africa. Its capital is Nairobi, which means place of cool waters in the Maasai language. Kenya is known for wildlife safaris, the Great Rift Valley, and long-distance runners."),
+    ("brazil brasilia capital south america", "Brazil is the largest country in South America. Its capital is Brasilia, a planned city opened in 1960. Brazil is known for the Amazon rainforest, football, Carnival, and coffee."),
+    ("egypt cairo capital africa nile", "Egypt is a country in North Africa. Its capital is Cairo, the largest city in Africa and home to the nearby Great Pyramids of Giza. The Nile River has supported Egyptian life for thousands of years."),
+    ("australia canberra capital", "Australia is a country and continent in the Southern Hemisphere. Its capital is Canberra, not Sydney or Melbourne. Australia is known for the Outback, unique wildlife, the Great Barrier Reef, and major cities on its coast."),
+    ("canada ottawa capital north america", "Canada is a country in North America spanning six time zones. Its capital is Ottawa. Canada is known for vast forests, maple syrup, hockey, polite cities, and cities like Toronto, Vancouver, and Montreal."),
+    ("india new delhi capital asia", "India is a country in South Asia. Its capital is New Delhi. India is the world's most populous country, known for the Taj Mahal, diverse languages, spices, cricket, and a growing technology industry."),
+    ("italy rome capital europe", "Italy is a country in Southern Europe shaped like a boot. Its capital is Rome, once the center of the Roman Empire. Italy is famous for art, architecture, pasta, pizza, fashion, and ancient ruins."),
+    ("nigeria abuja capital africa", "Nigeria is a country in West Africa and the most populous country on the continent. Its capital is Abuja, while Lagos is its largest city. Nigeria is known for Nollywood films and lively music."),
+    # ── chemistry & materials ─────────────────────────────────────────────
+    ("water molecule h2o hydrogen oxygen", "Water is made of molecules with two hydrogen atoms and one oxygen atom, written H2O. Water covers about seventy percent of Earth's surface and is essential for every known form of life."),
+    ("oxygen gas element breathing", "Oxygen is the chemical element with the symbol O. It is a colorless gas that makes up about twenty-one percent of Earth's atmosphere. Animals breathe oxygen to release energy from food."),
+    ("carbon element life diamond", "Carbon is the chemical element with the symbol C. It forms more compounds than any other element and is the backbone of life. In one arrangement carbon forms diamond; in another it forms graphite."),
+    ("gold metal element jewelry", "Gold is a soft, shiny metal with the symbol Au. It does not rust or tarnish, so people have used it for jewelry and coins for thousands of years. Gold conducts electricity very well."),
+    ("iron rust metal steel", "Iron is a common metal with the symbol Fe. When iron meets oxygen and moisture it forms rust, a flaky reddish coating. Mixing iron with carbon makes steel, which is used in buildings and tools."),
+    ("acids bases ph chemistry", "Acids taste sour and have a pH below seven, while bases feel slippery and have a pH above seven. Pure water has a pH of seven. Mixing an acid and a base can neutralize both."),
+    # ── human body ────────────────────────────────────────────────────────
+    ("heart blood pump organ", "The heart is a muscular organ that pumps blood through the body. It beats about one hundred thousand times a day, sending oxygen and nutrients to tissues and carrying waste away."),
+    ("lungs breathing oxygen organs", "The lungs are the organs of breathing. They take in oxygen from the air and release carbon dioxide. The left lung is slightly smaller than the right to make room for the heart."),
+    ("brain nervous system organ", "The brain is the control center of the nervous system. It processes senses, controls movement, stores memories, and manages breathing and heartbeat — all using about eighty-six billion nerve cells."),
+    ("bones skeleton calcium organ", "An adult skeleton has 206 bones. Bones are living tissue that store calcium, protect organs, and work with muscles to move the body. Bone marrow inside bones makes new blood cells."),
+    ("muscles movement protein organ", "There are more than six hundred muscles in the human body. Muscles contract to create movement, hold the skeleton upright, and generate heat that keeps body temperature stable."),
+    ("blood vessels circulation red", "Blood travels through a network of vessels: arteries carry blood away from the heart and veins bring it back. Red blood cells carry oxygen using a protein called hemoglobin."),
+    # ── inventions & technology history ───────────────────────────────────
+    ("wheel invention transportation", "The wheel is one of the oldest inventions, appearing more than five thousand years ago. It was first used for pottery and later for carts and chariots. The wheel transformed transportation and machinery."),
+    ("telephone bell invention communication", "Alexander Graham Bell is credited with patenting the telephone in 1876. Early telephones carried voice over wires between homes and offices, shrinking distances long before the internet existed."),
+    ("light bulb edison invention", "Joseph Swan and Thomas Edison both developed practical incandescent light bulbs in the 1870s. Electric lighting replaced gas lamps and candles, letting people work and travel safely after dark."),
+    ("steam engine industrial revolution", "The steam engine, improved by James Watt, converted heat into motion. It powered factories, mines, and locomotives, and it was the driving force behind the Industrial Revolution."),
+    ("paper invention writing china", "Paper was invented in China around two thousand years ago and later spread along trade routes. Cheap paper made books possible, education widespread, and record-keeping far easier than writing on stone or clay."),
+    # ── animals extra ─────────────────────────────────────────────────────
+    ("giraffe tall animal africa", "The giraffe is the tallest living animal, with adults reaching over five meters. Its long neck has the same seven neck vertebrae as most mammals, just greatly stretched. Giraffes live in African savannas."),
+    ("zebra stripes animal africa", "Zebras are African equids famous for their black and white stripes. Each zebra's pattern is unique like a fingerprint. Scientists believe stripes help confuse biting insects and predators in a herd."),
+    ("cheetah fast animal speed", "The cheetah is the fastest land animal, accelerating from zero to about one hundred kilometers per hour in a few seconds. It hunts in open grasslands and can only sustain top speed briefly."),
+    ("elephant largest animal memory", "Elephants are the largest land animals. They live in tight family herds led by the oldest female, mourn their dead, and can remember water sources and other elephants for decades."),
+    ("penguin bird antarctica swim", "Penguins are flightless birds that live mostly in the Southern Hemisphere. Their wings have become flippers for swimming. Emperor penguins endure Antarctic winters by huddling together against the cold."),
+    ("bats flying mammal echolocation", "Bats are the only mammals that can truly fly. Many species navigate in the dark using echolocation, sending out squeaks and listening for echoes. There are over one thousand four hundred bat species."),
+    # ── space extra ───────────────────────────────────────────────────────
+    ("saturn rings planet gas giant", "Saturn is the sixth planet from the Sun and is famous for its bright rings. The rings are made mostly of ice and rock particles. Saturn is a gas giant with dozens of moons."),
+    ("jupiter largest planet storm", "Jupiter is the largest planet in the solar system. Its Great Red Spot is a storm larger than Earth that has raged for centuries. Jupiter has a faint ring system and many moons."),
+    ("venus hottest planet greenhouse", "Venus is the second planet from the Sun and the hottest, with surface temperatures around four hundred sixty degrees Celsius. A thick carbon dioxide atmosphere traps heat through a runaway greenhouse effect."),
+    ("comets meteorites space rocks", "Comets are icy bodies that grow glowing tails as they near the Sun. When pieces of space rock survive the fall through Earth's atmosphere they are called meteorites, some of which are billions of years old."),
+    ("international space station orbit", "The International Space Station is a laboratory in low Earth orbit, circling the planet about every ninety minutes. It has been continuously inhabited by astronauts since the year two thousand."),
+    # ── computing extra ───────────────────────────────────────────────────
+    ("binary code computers bits", "Computers store and process information as binary code, strings of zeros and ones called bits. Eight bits form a byte. Everything on a screen ultimately comes from patterns of these simple switches."),
+    ("cpu processor computer chip", "The central processing unit, or CPU, is the brain of a computer. It fetches instructions from memory, decodes them, and performs arithmetic and logic billions of times per second."),
+    ("ram memory computer temporary", "RAM is a computer's short-term working memory. It holds programs and data currently in use so the CPU can reach them quickly. When power turns off, the contents of RAM disappear."),
+    ("open source software free code", "Open source software publishes its source code so anyone may read, change, and share it. Linux, Python, and many web tools are open source. Large communities improve the code together."),
+    ("cookies web browser tracking", "Cookies are small text files that websites store in your browser. They remember logins, cart contents, and preferences. Cookies can also track browsing across sites, which is why privacy laws mention them."),
+    # ── music & art ───────────────────────────────────────────────────────
+    ("beethoven composer classical music", "Ludwig van Beethoven was a German composer who bridged the Classical and Romantic eras. He wrote nine symphonies, including the famous Fifth, while composing most of them after losing his hearing."),
+    ("mozart composer classical prodigy", "Wolfgang Amadeus Mozart was an Austrian composer who performed for European royalty as a child. He composed over six hundred works, including operas, symphonies, and concertos, before his death at thirty-five."),
+    ("jazz music origin new orleans", "Jazz originated in New Orleans around the early nineteen hundreds, blending blues, ragtime, and African rhythms. It is known for swing, improvisation, and instruments like the trumpet, saxophone, and double bass."),
+    ("hip hop music culture turntables", "Hip hop culture began in the Bronx in the nineteen seventies with DJing, rapping, breakdancing, and graffiti. Turntables became instruments as DJs isolated and extended drum breaks for dancers."),
+    ("renaissance art italy painting", "The Renaissance was a revival of art and learning that began in Italy in the fourteen hundreds. Artists like Leonardo da Vinci and Michelangelo used perspective and anatomy to create lifelike masterpieces."),
+    # ── sports ────────────────────────────────────────────────────────────
+    ("football world cup sport", "The FIFA World Cup is the biggest football tournament, held every four years between national teams. Brazil has won it the most times. The two thousand twenty-two final in Qatar is widely called the greatest ever."),
+    ("marathon race sport distance", "A marathon is a forty-two point one nine five kilometer race. It is named after the ancient Greek messenger who ran from Marathon to Athens to announce a victory, then collapsed and died."),
+    ("basketball sport invention", "Basketball was invented in eighteen ninety-one by James Naismith in Massachusetts using a peach basket and a soccer ball. It grew into one of the world's most popular indoor sports."),
+    ("tennis sport origin lawn", "Modern tennis developed in Britain in the nineteenth century from an older French game. Matches can be singles or doubles, and the four Grand Slam tournaments are the sport's most prestigious events."),
+    # ── economics basics ──────────────────────────────────────────────────
+    ("supply demand prices economy", "Supply and demand set most market prices. When a product is scarce and wanted, its price rises; when it is plentiful, the price falls. Producers raise output when prices are high."),
+    ("barter trade money history", "Before money, people traded goods directly, called bartering. Swapping a chicken for cloth required a double coincidence of wants. Common currencies solved that problem by being a medium of exchange everyone accepts."),
+    ("banks money savings loans", "Banks take deposits from savers and lend that money to borrowers at a higher interest rate. The difference pays for staff and systems. Deposit insurance protects small savers if a bank fails."),
+    # ── weather & earth ───────────────────────────────────────────────────
+    ("thunder lightning storm weather", "Lightning is a massive electric discharge inside clouds or to the ground. It heats the air to around thirty thousand degrees Celsius, which expands explosively and creates the sound we hear as thunder."),
+    ("snow ice frozen precipitation", "Snow forms when water vapor freezes into ice crystals high in clouds and falls as flakes. Each flake usually has six branches because of the hexagonal shape of ice crystals."),
+    ("monsoon rain season weather", "A monsoon is a seasonal wind shift that brings heavy rains to South and Southeast Asia. The word comes from the Arabic for season. Monsoon rains refill rivers but can also cause floods."),
+    ("frost dew cold weather", "Dew forms when objects cool overnight and water vapor in the air condenses onto them. When temperatures drop below freezing, that moisture becomes frost — tiny ice crystals on grass and leaves."),
+    # ── everyday science ──────────────────────────────────────────────────
+    ("sundial clock time history", "Before mechanical clocks, sundials told time using the Sun's shadow. A gnomon casts a shadow that moves across marked hours. Sundials only work in daylight, so water and sand clocks were used at night."),
+    ("libraries books knowledge history", "Libraries have preserved knowledge for millennia, from ancient clay tablets to printed books. The ancient Library of Alexandria was famous for collecting scrolls from across the Mediterranean world."),
+    ("museums artifacts culture", "Museums collect, preserve, and display artifacts of art, science, and history. They let the public study objects that would otherwise be private or lost, and they often run research programs too."),
+    ("maps projection geography", "Maps flatten the round Earth onto paper, which always distorts something. The Mercator map preserves shapes and angles for navigation but makes polar regions look far larger than they really are."),
+    ("refrigerator food cold appliance", "A refrigerator slows bacterial growth by keeping food at about four degrees Celsius. A coolant evaporates inside the coils, absorbing heat from the interior, then releases it outside the appliance."),
 ]
 
 
@@ -162,7 +238,7 @@ def _safe_arith(a: int, b: int, sym: str) -> float:
 def _fmt_num(x: float) -> str:
     if abs(x - round(x)) < 1e-9:
         return str(int(round(x)))
-    return f"{x:.4f}".rstrip("0").rstrip(".")
+    return f"{x:.6g}"
 
 
 def _gen_arithmetic(rng: random.Random, n: int) -> list[str]:
@@ -449,6 +525,102 @@ def _gen_multistep(rng: random.Random, n: int) -> list[str]:
 SYS_LINE = "<sys> you are lumo , an ai agent that answers questions with tools . </sys>"
 
 
+# (from_unit, to_unit) → expression template with {v}
+CONVERSIONS: dict[tuple[str, str], str] = {
+    ("km", "mi"): "{v} * 0.621371",
+    ("mi", "km"): "{v} * 1.609344",
+    ("kg", "lb"): "{v} * 2.20462",
+    ("lb", "kg"): "{v} * 0.453592",
+    ("c", "f"): "{v} * 9 / 5 + 32",
+    ("f", "c"): "({v} - 32) * 5 / 9",
+    ("m", "ft"): "{v} * 3.28084",
+    ("ft", "m"): "{v} * 0.3048",
+    ("l", "gal"): "{v} * 0.264172",
+    ("g", "oz"): "{v} * 0.035274",
+}
+
+UNIT_ALIASES = {
+    "km": "km", "kilometer": "km", "kilometers": "km", "kilometre": "km",
+    "kilometres": "km", "mi": "mi", "mile": "mi", "miles": "mi",
+    "kg": "kg", "kilogram": "kg", "kilograms": "kg", "kilo": "kg",
+    "kilos": "kg", "lb": "lb", "pound": "lb", "pounds": "lb", "lbs": "lb",
+    "c": "c", "celsius": "c", "centigrade": "c", "f": "f",
+    "fahrenheit": "f", "m": "m", "meter": "m", "meters": "m",
+    "metre": "m", "metres": "m", "ft": "ft", "foot": "ft", "feet": "ft",
+    "l": "l", "liter": "l", "liters": "l", "litre": "l", "litres": "l",
+    "gal": "gal", "gallon": "gal", "gallons": "gal", "g": "g",
+    "gram": "g", "grams": "g", "oz": "oz", "ounce": "oz", "ounces": "oz",
+}
+
+_UNIT_DISPLAY = {
+    "km": "km", "mi": "miles", "kg": "kg", "lb": "pounds", "c": "celsius",
+    "f": "fahrenheit", "m": "meters", "ft": "feet", "l": "liters",
+    "gal": "gallons", "g": "grams", "oz": "ounces",
+}
+
+
+def _gen_conversions(rng: random.Random, n: int) -> list[str]:
+    out = []
+    pairs = list(CONVERSIONS.items())
+    thoughts = [
+        "i will use the calculator to convert that .",
+        "let me convert the units .",
+        "the calculator can handle this conversion .",
+    ]
+    qs = [
+        "convert {v} {u1} to {u2}",
+        "{v} {u1} to {u2} please",
+        "how many {u2} in {v} {u1} ?",
+        "{v} {u1} is how many {u2} ?",
+        "what is {v} {u1} in {u2} ?",
+    ]
+    for _ in range(n):
+        (u1, u2), tmpl = rng.choice(pairs)
+        v = rng.choice([1, 2, 5, 10, 12, 15, 25, 42, 50, 75, 100, 150, 200])
+        if rng.random() < 0.3:
+            v = rng.randrange(1, 40) + 0.5
+        expr = tmpl.format(v=v)
+        try:
+            result = _safe_arith_eval(expr)
+        except Exception:  # noqa: BLE001
+            continue
+        r = _fmt_num(result)
+        d1, d2 = _UNIT_DISPLAY[u1], _UNIT_DISPLAY[u2]
+        q = rng.choice(qs).format(v=_fmt_num(v), u1=d1, u2=d2)
+        finish_style = rng.randrange(3)
+        if finish_style == 0:
+            finish = f"{_fmt_num(v)} {d1} = {r} {d2} ."
+        elif finish_style == 1:
+            finish = f"it is {r} {d2} ."
+        else:
+            finish = f"{r} {d2} ."
+        out.append(
+            f"user : {q}\nlumo : {rng.choice(thoughts)}\n"
+            f"action : calculator {expr}\nobservation : {r}\n"
+            f"lumo : i have the conversion .\nfinish : {finish}"
+        )
+    return out
+
+
+def _safe_arith_eval(expr: str) -> float:
+    import ast
+
+    def ev(node):
+        if isinstance(node, ast.Expression):
+            return ev(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        if isinstance(node, ast.BinOp):
+            ops = {ast.Add: lambda a, b: a + b, ast.Sub: lambda a, b: a - b,
+                   ast.Mult: lambda a, b: a * b, ast.Div: lambda a, b: a / b}
+            return ops[type(node.op)](ev(node.left), ev(node.right))
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            return -ev(node.operand)
+        raise ValueError("bad expr")
+
+    return float(ev(ast.parse(expr, mode="eval")))
+
+
 def build_blocks(seed: int = 7) -> list[str]:
     rng = random.Random(seed)
     blocks: list[str] = [SYS_LINE]
@@ -456,9 +628,10 @@ def build_blocks(seed: int = 7) -> list[str]:
     blocks += _gen_multistep(rng, 160)
     blocks += _gen_time(rng, 240)
     blocks += _gen_memory(rng, 420)
-    blocks += _gen_knowledge(rng, 300)
+    blocks += _gen_knowledge(rng, 600)
     blocks += _gen_chat(rng, 340)
     blocks += _gen_two_turn(rng, 420)
+    blocks += _gen_conversions(rng, 300)
     rng.shuffle(blocks)
     return blocks
 

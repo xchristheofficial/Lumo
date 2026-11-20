@@ -156,6 +156,14 @@ body {
 .btn.danger:hover:not(:disabled) { border-color: var(--red); color: var(--red); }
 .btn.tiny { padding: 3px 9px; font-size: 11px; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.auto { border-color: rgba(167, 139, 250, .45); color: var(--violet); }
+.btn.auto.on {
+  background: rgba(167, 139, 250, .18);
+  border-color: var(--violet); color: #ddd6fe;
+  box-shadow: 0 0 14px rgba(167, 139, 250, .35);
+}
+#progress-bar.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.6); } }
 
 .progress { height: 7px; background: var(--panel-2); border-radius: 999px;
   overflow: hidden; margin-bottom: 10px; border: 1px solid var(--line); }
