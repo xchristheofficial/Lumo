@@ -72,10 +72,12 @@ def main() -> int:
     if model is None:
         model = TinyGPT(bundle.tokenizer.vocab_size)
 
+    from .corpus import build_val_bundle
     from .train import Trainer
 
     trainer = Trainer(model, bundle.tokens, CKPT_PATH,
-                      tokenizer=bundle.tokenizer, log_path=LOG_PATH)
+                      tokenizer=bundle.tokenizer, log_path=LOG_PATH,
+                      val=build_val_bundle(bundle.tokenizer))
     trainer.starts = bundle.starts
     if Path(CKPT_PATH).exists() and model is not None:
         try:

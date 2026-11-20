@@ -28,7 +28,7 @@ class Trainer:
 
     def __init__(self, model: TinyGPT, tokens: np.ndarray, ckpt_path: str,
                  on_saved=None, on_progress=None, tokenizer=None,
-                 log_path: str | None = None):
+                 log_path: str | None = None, val: "object | None" = None):
         self.model = model
         self.tokens = tokens
         self.ckpt_path = ckpt_path
@@ -44,6 +44,7 @@ class Trainer:
             "running": False,
             "step": 0,
             "loss": None,
+            "val_loss": None,
             "best_loss": None,
             "elapsed": 0.0,
             "tokens_per_s": 0.0,
@@ -51,8 +52,48 @@ class Trainer:
             "max_steps": 0,
             "done": False,
             "message": "idle",
-            "history": [],  # recent (step, loss) for late joiners
+            "history": [],      # recent (step, loss) for late joiners
+            "val_history": [],  # recent (step, val_loss)
         }
+        self.val_batches = self._build_val_batches(val)
+
+    # ---------------------------- validation ------------------------------ #
+
+    def _build_val_batches(self, val, k: int = 6):
+        """Fixed held-out batches so val loss is comparable step to step."""
+        if val is None:
+            return None
+        try:
+            tokens = val.tokens
+            seq = self.model.cfg["seq_len"]
+            rng = np.random.default_rng(4242)
+            n = int(tokens.size)
+            if n <= seq + 2:
+                return None
+            anchors = getattr(val, "starts", None)
+            rows, tgts = [], []
+            half = k // 2
+            if anchors is not None and len(anchors):
+                valid_a = anchors[anchors <= n - seq - 2]
+                picks = valid_a[rng.integers(0, len(valid_a), size=half)]
+            else:
+                picks = rng.integers(0, n - seq - 1, size=half)
+            rand = rng.integers(0, n - seq - 1, size=k - half)
+            for s in list(picks) + list(rand):
+                s = int(s)
+                rows.append(tokens[s: s + seq])
+                tgts.append(tokens[s + 1: s + seq + 1])
+            return (np.stack(rows).astype(np.int32),
+                    np.stack(tgts).astype(np.int32))
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _val_loss(self) -> float | None:
+        if self.val_batches is None:
+            return None
+        idx, tgt = self.val_batches
+        _, loss, _ = self.model.forward(idx, tgt)
+        return round(float(loss), 4)
 
     # ------------------------------ events -------------------------------- #
 
@@ -233,6 +274,18 @@ class Trainer:
                 elapsed = time.time() - t0
                 tps = (step * batch * seq) / max(elapsed, 1e-6)
 
+                # held-out validation loss every 100 steps (and at the end)
+                val_l = None
+                if step % 100 == 0:
+                    val_l = self._val_loss()
+                    if val_l is not None:
+                        with self.lock:
+                            self.state["val_loss"] = val_l
+                            self.state["val_history"].append((step, val_l))
+                            if len(self.state["val_history"]) > 500:
+                                self.state["val_history"] = \
+                                    self.state["val_history"][-500:]
+
                 with self.lock:
                     self.state.update({
                         "step": step, "loss": round(loss_ema, 4),
@@ -245,6 +298,7 @@ class Trainer:
                         self.state["history"] = self.state["history"][-2000:]
                 self._emit({"type": "progress", "step": step,
                             "loss": round(loss_ema, 4),
+                            "val_loss": val_l,
                             "raw_loss": round(loss, 4),
                             "elapsed": round(elapsed, 1),
                             "tokens_per_s": int(tps), "lr": round(lr, 6)})
@@ -259,7 +313,8 @@ class Trainer:
                     self._save(step, loss_ema)
                     n_seen = getattr(self, "exp_starts", None)
                     n_seen = 0 if n_seen is None else len(n_seen)
-                    self._log(f"step={step} loss={loss_ema:.4f} "
+                    vtxt = (f" val={val_l}" if val_l is not None else "")
+                    self._log(f"step={step} loss={loss_ema:.4f}{vtxt} "
                               f"raw={loss:.4f} tps={int(tps)} "
                               f"experiences={n_seen}")
 

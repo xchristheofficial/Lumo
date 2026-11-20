@@ -49,11 +49,15 @@ dropping and checkpoints keep saving to `checkpoints/lumo.npz` (reloaded on rest
 ## How to test it
 
 1. **Watch it learn (no interaction needed)**
-   - Open the site → the sidebar loss chart streams live; the pill shows
-     `autopilot: step N · loss L` and the progress bar pulses.
-   - Or from a terminal: `tail -f data/train.log`
+   - Open the site → the sidebar loss chart streams live: the solid cyan
+     line is the training loss, the dashed violet line is the **held-out
+     validation loss** (recomputed every 100 steps on fixed batches the
+     model never trains on — the honest measure of generalization); the
+     stats row shows `train`, `val`, and the lifetime step.
+   - Or from a terminal: `tail -f data/train.log` (train + `val=` entries)
    - Or: `curl -s localhost:8000/api/status | python3 -m json.tool` →
-     `training.running == true`, `training.loss` falling, `autopilot.enabled == true`
+     `training.running == true`, `training.loss` falling,
+     `training.val_loss` updating, `autopilot.enabled == true`
 
 2. **Chat now vs. later** (engine badge on each reply)
    - First minutes: replies run on `rules` (deterministic) while the model warms up.
@@ -71,6 +75,25 @@ dropping and checkpoints keep saving to `checkpoints/lumo.npz` (reloaded on rest
 4. **Autopilot toggle** — hit `🤖 autopilot` in the training panel to stop/start
    continuous training; the choice persists across restarts
    (`data/autopilot.json`).
+
+5. **Automated test suite** — 26 unit tests, pure stdlib `unittest`
+   ```bash
+   .venv/bin/python -m unittest discover -s tests -v
+   ```
+   Includes a numerical gradient check (central finite differences) of the
+   hand-written backprop, plus the tool layer (safe calculator, memory,
+   knowledge search, time) and the rule planner's intent routing.
+
+6. **Evaluation harness** — a 30-case scored battery (math · convert ·
+   time · knowledge · chat · memory), printed as a per-category table:
+   ```bash
+   .venv/bin/python -m lumo.evaluate                 # score vs 85% floor
+   .venv/bin/python -m lumo.evaluate --min-acc 0.95  # stricter gate
+   .venv/bin/python -m lumo.evaluate --json out.json # machine-readable
+   ```
+   Reports accuracy by category, which engine answered, p50/max latency,
+   and the loaded checkpoint; exits non-zero when accuracy < `--min-acc`
+   (CI-friendly), and never writes training experiences.
 
 ## Training modes
 

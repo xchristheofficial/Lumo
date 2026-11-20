@@ -667,6 +667,26 @@ def build_bundle(cap: int = 4500, seed: int = 7) -> CorpusBundle:
                         starts=np.asarray(sorted(set(starts)), dtype=np.int64))
 
 
+def build_val_bundle(tokenizer: Tokenizer, cap: int = 4500) -> CorpusBundle:
+    """Held-out trajectories (different RNG seed, shared tokenizer) used to
+    measure validation loss — a true generalization signal, since every
+    question/number/passage combination in it was never trained on."""
+    blocks = build_blocks(99)
+    text = ("\n" + SYS_LINE + "\n").join(blocks) + "\n"
+    ids = tokenizer.encode(text)
+    sep_ids = tokenizer.encode("\n" + SYS_LINE + "\n")
+    starts: list[int] = []
+    off = 0
+    for i, blk in enumerate(blocks):
+        if i > 0:
+            off += len(sep_ids)
+        starts.append(off)
+        off += len(tokenizer.encode(blk))
+    return CorpusBundle(text=text, tokens=np.asarray(ids, dtype=np.int32),
+                        tokenizer=tokenizer,
+                        starts=np.asarray(sorted(set(starts)), dtype=np.int64))
+
+
 if __name__ == "__main__":
     b = build_bundle()
     print(f"corpus chars : {len(b.text):,}")

@@ -172,7 +172,7 @@ body {
   background: linear-gradient(90deg, var(--cyan), var(--violet));
   transition: width .4s ease; box-shadow: 0 0 12px rgba(94, 234, 212, .6);
 }
-.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
 .stats div { background: var(--panel-2); border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 4px; text-align: center; }
 .stats .k { display: block; font: 10px var(--mono); color: var(--dim);

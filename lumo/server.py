@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import experience
-from .corpus import PASSAGES, build_bundle
+from .corpus import PASSAGES, build_bundle, build_val_bundle
 from .engine import build_agent
 from .model import TinyGPT
 from .tools import MEMORY_PATH, TOOLS, init_knowledge
@@ -86,6 +86,7 @@ def _startup() -> None:
     CKPT_DIR.mkdir(parents=True, exist_ok=True)
     (ROOT / "data").mkdir(parents=True, exist_ok=True)
     bundle = build_bundle()
+    val_bundle = build_val_bundle(bundle.tokenizer)
     init_knowledge(PASSAGES)
 
     model: TinyGPT | None = None
@@ -116,7 +117,8 @@ def _startup() -> None:
     trainer = Trainer(model if model is not None else TinyGPT(bundle.tokenizer.vocab_size),
                       bundle.tokens, CKPT_PATH,
                       tokenizer=bundle.tokenizer,
-                      log_path=str(ROOT / "data" / "train.log"))
+                      log_path=str(ROOT / "data" / "train.log"),
+                      val=val_bundle)
     # lifetime step counter so checkpoints report total training across runs
     trainer.base_step = int(ckpt_meta.get("step", 0)) if ckpt_meta else 0
     # if we had no checkpoint, the trainer owns the fresh model → hand it to the agent
@@ -194,7 +196,8 @@ def status():
             "corpus_tokens": int(bundle.tokens.size),
             "checkpoint": state.get("ckpt_meta"),
         },
-        "training": dict(trainer.state),
+        "training": dict(trainer.state,
+                         lifetime_step=trainer.base_step + trainer.state["step"]),
         "autopilot": {"enabled": _autopilot_enabled()},
         "experiences": experience.count(),
         "tools": [
