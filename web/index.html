@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lumo — on-device AI agent</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">✦</span>
+      <div class="brand-text">
+        <h1>Lumo</h1>
+        <p>on-device agent · trained from scratch · <strong>0 provider APIs</strong></p>
+      </div>
+    </div>
+    <div class="pills">
+      <span class="pill" id="pill-params" title="model parameters">… params</span>
+      <span class="pill" id="pill-model">model: loading</span>
+      <span class="pill" id="pill-train">training: —</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- ───────────────── chat ───────────────── -->
+    <section class="chat-card">
+      <div class="chat-head">
+        <span class="dot"></span>
+        <span>chat</span>
+        <div class="engine-toggle" id="engine-toggle" title="planner engine">
+          <button data-engine="auto" class="active">auto</button>
+          <button data-engine="neural">neural</button>
+          <button data-engine="rules">rules</button>
+        </div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="msg assistant">
+          <div class="bubble">
+            <p>Hi — I'm <b>Lumo</b>, an AI agent built entirely from scratch: a tiny
+            transformer in NumPy, a ReAct-style tool loop, and a local knowledge base.
+            Nothing calls out to OpenAI, Anthropic, or any other provider.</p>
+            <p>Training starts automatically on first boot — watch the loss drop in the
+            panel on the right, then ask me something.</p>
+          </div>
+          <span class="meta">boot</span>
+        </div>
+      </div>
+
+      <div class="suggest" id="suggest"></div>
+
+      <form class="input-row" id="chat-form">
+        <input id="chat-input" type="text" autocomplete="off"
+               placeholder="ask lumo anything — e.g. “what is 17 * 23 ?”" />
+        <button type="submit" id="send-btn">send</button>
+      </form>
+    </section>
+
+    <!-- ───────────────── sidebar ───────────────── -->
+    <aside class="side">
+      <div class="card train-card">
+        <div class="card-head">
+          <h2>⚡ training</h2>
+          <div class="train-actions">
+            <button id="btn-quick" class="btn primary">quick</button>
+            <button id="btn-full" class="btn">full</button>
+            <button id="btn-stop" class="btn danger" disabled>stop</button>
+          </div>
+        </div>
+
+        <div class="progress"><div id="progress-bar"></div></div>
+
+        <div class="stats" id="stats">
+          <div><span class="k">step</span><span class="v" id="st-step">0</span></div>
+          <div><span class="k">loss</span><span class="v" id="st-loss">—</span></div>
+          <div><span class="k">tok/s</span><span class="v" id="st-tps">—</span></div>
+          <div><span class="k">elapsed</span><span class="v" id="st-elapsed">—</span></div>
+        </div>
+
+        <canvas id="loss-chart" width="300" height="140"></canvas>
+        <p class="hint" id="train-hint">cross-entropy loss · ~600k-param decoder · pure NumPy + Adam</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>🛠 tools</h2></div>
+        <ul class="tools" id="tools"></ul>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>💾 memory</h2>
+          <button class="btn tiny" id="btn-clear-mem">clear</button>
+        </div>
+        <div class="memory" id="memory"><span class="dim">nothing stored yet</span></div>
+      </div>
+
+      <div class="card about">
+        <div class="card-head"><h2>ℹ️ about</h2></div>
+        <p>Lumo runs 100% in this sandbox: corpus → tokenizer → transformer →
+        agent loop → web UI. Model weights never leave the machine, and there are
+        no API keys anywhere in the codebase.</p>
+        <p class="dim" id="boot-info"></p>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
