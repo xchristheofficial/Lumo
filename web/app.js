@@ -76,9 +76,25 @@ function renderStatus(s) {
     paintTraining();
   }
 
+  // autopilot + experiences
+  autoEnabled = !!(s.autopilot && s.autopilot.enabled);
+  paintAutopilot();
+  $("exp-hint").textContent =
+    `experiences recorded: ${(s.experiences ?? 0).toLocaleString()} · ` +
+    `knowledge: ${s.knowledge_passages} passages`;
+
   $("boot-info").textContent =
     `boot ${s.boot_ms}ms · ${m.corpus_tokens.toLocaleString()} training tokens · ` +
     `${s.knowledge_passages} knowledge passages · ${s.provider_apis} provider APIs`;
+}
+
+let autoEnabled = true;
+
+function paintAutopilot() {
+  const b = $("btn-auto");
+  if (!b) return;
+  b.classList.toggle("on", autoEnabled);
+  b.textContent = autoEnabled ? "🤖 autopilot ON" : "🤖 autopilot OFF";
 }
 
 function renderMemory(mem) {
@@ -272,8 +288,12 @@ $("btn-clear-mem").onclick = async () => {
 
 function paintTraining() {
   const st = trainState;
+  const isAuto = st.mode === "auto";
   const pill = $("pill-train");
-  if (st.running) {
+  if (st.running && isAuto) {
+    pill.textContent = `autopilot: step ${st.step} · loss ${st.loss ?? "…"}`;
+    pill.classList.add("train-on");
+  } else if (st.running) {
     pill.textContent = `training: step ${st.step}${st.max_steps ? "/" + st.max_steps : ""}`;
     pill.classList.add("train-on");
   } else if (st.done || st.step > 0) {
@@ -291,9 +311,36 @@ function paintTraining() {
   $("st-loss").textContent = st.loss ?? "—";
   $("st-tps").textContent = st.tokens_per_s ?? "—";
   $("st-elapsed").textContent = st.elapsed != null ? `${st.elapsed}s` : "—";
-  const pct = st.max_steps ? Math.min(100, (100 * st.step) / st.max_steps) : 0;
-  $("progress-bar").style.width = `${pct}%`;
+  const bar = $("progress-bar");
+  if (isAuto && st.running) {
+    bar.style.width = "100%";
+    bar.classList.add("pulse");
+  } else {
+    bar.classList.remove("pulse");
+    const pct = st.max_steps && st.max_steps < 1e8
+      ? Math.min(100, (100 * st.step) / st.max_steps) : 0;
+    bar.style.width = `${pct}%`;
+  }
 }
+
+/* ── autopilot toggle ──────────────────────────────────────── */
+$("btn-auto").onclick = async () => {
+  const next = !autoEnabled;
+  try {
+    const r = await fetch("/api/autopilot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ enabled: next }),
+    });
+    const j = await r.json();
+    autoEnabled = next;
+    paintAutopilot();
+    if (next && !j.ok && j.message) console.log(j.message);
+    setTimeout(refreshStatus, 400);
+  } catch (e) {
+    alert(`autopilot toggle failed: ${e.message}`);
+  }
+};
 
 /* ── loss chart ──────────────────────────────────────────────── */
 const canvas = $("loss-chart");

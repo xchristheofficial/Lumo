@@ -16,6 +16,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import experience
 from .corpus import PASSAGES, build_bundle
 from .engine import build_agent
 from .model import TinyGPT
@@ -25,6 +26,20 @@ ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = ROOT / "web"
 CKPT_DIR = ROOT / "checkpoints"
 CKPT_PATH = str(CKPT_DIR / "lumo.npz")
+AUTOPILOT_PATH = ROOT / "data" / "autopilot.json"
+
+
+def _autopilot_enabled() -> bool:
+    """Autopilot is ON by default — the agent trains itself when you're away."""
+    try:
+        return bool(json.loads(AUTOPILOT_PATH.read_text()).get("enabled", True))
+    except Exception:  # noqa: BLE001
+        return True
+
+
+def _set_autopilot(enabled: bool) -> None:
+    AUTOPILOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    AUTOPILOT_PATH.write_text(json.dumps({"enabled": bool(enabled)}))
 
 # --------------------------------------------------------------------------- #
 # App state
@@ -51,7 +66,11 @@ class ChatIn(BaseModel):
 
 
 class TrainIn(BaseModel):
-    mode: str = "quick"  # quick | full | extreme
+    mode: str = "quick"  # quick | full | extreme | auto (autopilot)
+
+
+class AutopilotIn(BaseModel):
+    enabled: bool
 
 
 # --------------------------------------------------------------------------- #
@@ -60,9 +79,12 @@ class TrainIn(BaseModel):
 
 @app.on_event("startup")
 def _startup() -> None:
+    from . import experience
     from .train import Trainer
 
     t0 = time.time()
+    CKPT_DIR.mkdir(parents=True, exist_ok=True)
+    (ROOT / "data").mkdir(parents=True, exist_ok=True)
     bundle = build_bundle()
     init_knowledge(PASSAGES)
 
@@ -75,19 +97,28 @@ def _startup() -> None:
 
             z = np.load(CKPT_PATH, allow_pickle=False)
             cfg = {k[4:]: int(z[k]) for k in z.files if k.startswith("cfg_")}
-            model = TinyGPT(**cfg)
-            for k in z.files:
-                if k.startswith("p_"):
-                    model.P[k[2:]] = z[k].astype(np.float32)
-            ckpt_meta = {k[5:]: z[k].item() if z[k].ndim == 0 else str(z[k])
-                         for k in z.files if k.startswith("meta_")}
+            if cfg.get("vocab_size") != bundle.tokenizer.vocab_size:
+                # corpus/vocab changed since the checkpoint — start fresh
+                print("[lumo] checkpoint vocabulary mismatch — starting fresh")
+                model = None
+            else:
+                model = TinyGPT(**cfg)
+                for k in z.files:
+                    if k.startswith("p_"):
+                        model.P[k[2:]] = z[k].astype(np.float32)
+                ckpt_meta = {k[5:]: z[k].item() if z[k].ndim == 0 else str(z[k])
+                             for k in z.files if k.startswith("meta_")}
         except Exception as e:  # noqa: BLE001
             print(f"[lumo] failed to load checkpoint: {e}")
             model = None
 
     agent = build_agent(model, bundle.tokenizer)
     trainer = Trainer(model if model is not None else TinyGPT(bundle.tokenizer.vocab_size),
-                      bundle.tokens, CKPT_PATH)
+                      bundle.tokens, CKPT_PATH,
+                      tokenizer=bundle.tokenizer,
+                      log_path=str(ROOT / "data" / "train.log"))
+    # lifetime step counter so checkpoints report total training across runs
+    trainer.base_step = int(ckpt_meta.get("step", 0)) if ckpt_meta else 0
     # if we had no checkpoint, the trainer owns the fresh model → hand it to the agent
     if model is None:
         agent.reload_model(trainer.model)
@@ -97,7 +128,7 @@ def _startup() -> None:
         agent.neural.trained = True
 
     def _on_progress(step: int, _loss: float) -> None:
-        if step >= agent.neural.min_steps:
+        if trainer.base_step + step >= agent.neural.min_steps:
             agent.neural.trained = True
 
     def _on_saved() -> None:
@@ -117,12 +148,15 @@ def _startup() -> None:
         "boot_ms": int((time.time() - t0) * 1000),
     })
 
-    # Train right away on first boot so the user sees learning ASAP.
-    if ckpt_meta is None:
-        trainer.start("quick")
-        print("[lumo] no checkpoint found — auto-started quick training")
+    # ── autopilot: keep learning even when nobody is watching ──────────────
+    if _autopilot_enabled():
+        trainer.start("auto")
+        print("[lumo] autopilot engaged — training continuously in the background")
+    else:
+        print("[lumo] autopilot is disabled (enable it in the training panel)")
     print(f"[lumo] ready in {state['boot_ms']} ms "
-          f"(vocab={bundle.tokenizer.vocab_size}, tokens={bundle.tokens.size:,})")
+          f"(vocab={bundle.tokenizer.vocab_size}, tokens={bundle.tokens.size:,}, "
+          f"experiences={experience.count()})")
 
 
 # --------------------------------------------------------------------------- #
@@ -147,7 +181,7 @@ def status():
             memory = {}
     return {
         "app": "lumo",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "model": {
             "ready": True,
             "neural_ready": state["agent"].neural.ready,
@@ -161,6 +195,8 @@ def status():
             "checkpoint": state.get("ckpt_meta"),
         },
         "training": dict(trainer.state),
+        "autopilot": {"enabled": _autopilot_enabled()},
+        "experiences": experience.count(),
         "tools": [
             {"name": n, "desc": t["desc"], "emoji": t["emoji"]}
             for n, t in TOOLS.items()
@@ -225,13 +261,24 @@ def chat(req: ChatIn):
 
 @app.post("/api/train")
 def train(req: TrainIn):
-    mode = req.mode if req.mode in ("quick", "full", "extreme") else "quick"
+    mode = req.mode if req.mode in ("quick", "full", "extreme", "auto") else "quick"
     return state["trainer"].start(mode)
 
 
 @app.post("/api/train/stop")
 def train_stop():
     return state["trainer"].stop()
+
+
+@app.post("/api/autopilot")
+def autopilot(req: AutopilotIn):
+    """Enable/disable continuous self-training (persisted across restarts)."""
+    _set_autopilot(req.enabled)
+    if req.enabled:
+        result = state["trainer"].start("auto")
+        return {"ok": True, "enabled": True, **{k: v for k, v in result.items() if k != "ok"}}
+    result = state["trainer"].stop()
+    return {"ok": True, "enabled": False, **{k: v for k, v in result.items() if k != "ok"}}
 
 
 @app.get("/api/train/events")

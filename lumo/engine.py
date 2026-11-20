@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Callable, Iterator
 
-from .corpus import PASSAGES, SYS_LINE, Tokenizer
+from .corpus import CONVERSIONS, PASSAGES, SYS_LINE, UNIT_ALIASES, Tokenizer
 from .model import TinyGPT
 from .tools import run_tool
 
@@ -60,11 +60,43 @@ def _normalize_math(text: str) -> str | None:
     return None
 
 
+def _canon_unit(u: str) -> str | None:
+    return UNIT_ALIASES.get(u.strip().lower().lstrip("°"))
+
+
+def _normalize_conversion(t: str) -> tuple[str, str, str, str] | None:
+    """Detect unit conversions → (expr, value, from_display, to_display)."""
+    def lookup(u1: str | None, u2: str | None, v: str):
+        if u1 and u2 and u1 != u2 and (u1, u2) in CONVERSIONS:
+            from .corpus import _UNIT_DISPLAY
+
+            return (CONVERSIONS[(u1, u2)].format(v=v), v,
+                    _UNIT_DISPLAY[u1], _UNIT_DISPLAY[u2])
+        return None
+
+    # "convert 5 km to miles" / "5 km in miles" / "12 pounds to kg"
+    m = re.search(r"(-?\d+(?:\.\d+)?)\s*(?:°\s*)?([a-z]+)\s+"
+                  r"(?:to|into|in)\s+(?:°\s*)?([a-z]+)", t)
+    if m:
+        hit = lookup(_canon_unit(m.group(2)), _canon_unit(m.group(3)), m.group(1))
+        if hit:
+            return hit
+    # "how many miles in 5 km"
+    m = re.search(r"how many\s+([a-z]+)\s+(?:are\s+)?in\s+"
+                  r"(-?\d+(?:\.\d+)?)\s+([a-z]+)", t)
+    if m:
+        hit = lookup(_canon_unit(m.group(3)), _canon_unit(m.group(1)), m.group(2))
+        if hit:
+            return hit
+    return None
+
+
 @dataclass
 class Plan:
     actions: list[tuple[str, str]] = field(default_factory=list)  # (tool, arg)
     direct_answer: str | None = None
     fallback: bool = False          # True for the generic last-resort reply
+    conv: tuple[str, str, str] | None = None  # (value, from_unit, to_unit)
     thoughts: list[str] = field(default_factory=list)
     engine: str = "rules"
 
@@ -134,6 +166,15 @@ def rule_plan(msg: str) -> Plan:
     if re.search(r"\b(what (?:'s|is)? ?(?:the )?date|what day|today's date|date today)\b", t):
         p.thoughts.append("i will check today's date .")
         p.actions.append(("time", "now"))
+        return p
+
+    # --- unit conversions ---------------------------------------------------- #
+    conv = _normalize_conversion(t)
+    if conv:
+        expr, v, u1d, u2d = conv
+        p.thoughts.append("i will use the calculator to convert that .")
+        p.actions.append(("calculator", expr))
+        p.conv = (v, u1d, u2d)
         return p
 
     # --- calculator ---------------------------------------------------------- #
@@ -265,6 +306,11 @@ class NeuralAgent:
         good_obs = [(n, t) for k, n, t in trace
                     if k == "observation" and not t.startswith("error")]
         anchored = bool(good_obs)
+        # if the model tried tools and every single call failed, any answer
+        # it makes up is unverifiable → fall back to rules
+        if any(k == "action" for k, _, _ in trace) and not good_obs:
+            return NeuralResult(ok=False, trace=trace,
+                                error="all tool calls failed")
         ok_len = 2 <= len(answer) <= 600
         ok_shape = len(words) >= 5 or (anchored and len(words) >= 3)
         if not ok_len or not ok_shape:
@@ -446,7 +492,11 @@ class Agent:
                     elif tool == "time":
                         answer = f"right now it is {obs} ."
                     elif tool == "calculator":
-                        answer = f"{arg} = {obs}" if not obs.startswith("error") else obs
+                        if plan.conv and not obs.startswith("error"):
+                            v, u1d, u2d = plan.conv
+                            answer = f"{v} {u1d} = {obs} {u2d} ."
+                        else:
+                            answer = f"{arg} = {obs}" if not obs.startswith("error") else obs
                     elif tool == "search":
                         answer = obs if not obs.startswith("no relevant") else \
                             ("i could not find that in my knowledge base . my offline library "
@@ -469,6 +519,17 @@ class Agent:
         self.history.append({"role": "assistant",
                              "content": "\n".join(a_lines) if a_lines else str(answer)})
         self.history = self.history[-12:]
+
+        # Write the verified exchange down so the autopilot trainer can
+        # learn from it while you're away (experience replay).
+        if answer and a_lines:
+            try:
+                from . import experience
+
+                experience.record(msg, "\n".join(a_lines), engine_used)
+            except Exception:  # noqa: BLE001
+                pass
+
         yield {"type": "done", "answer": answer, "engine": engine_used}
 
 

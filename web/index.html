@@ -64,6 +64,7 @@
         <div class="card-head">
           <h2>⚡ training</h2>
           <div class="train-actions">
+            <button id="btn-auto" class="btn auto" title="train forever, even when you're away">🤖 autopilot</button>
             <button id="btn-quick" class="btn primary">quick</button>
             <button id="btn-full" class="btn">full</button>
             <button id="btn-stop" class="btn danger" disabled>stop</button>
@@ -80,7 +81,8 @@
         </div>
 
         <canvas id="loss-chart" width="300" height="140"></canvas>
-        <p class="hint" id="train-hint">cross-entropy loss · ~600k-param decoder · pure NumPy + Adam</p>
+        <p class="hint" id="train-hint">autopilot trains in the background and replays your conversations · pure NumPy + Adam</p>
+        <p class="hint" id="exp-hint">experiences recorded: 0</p>
       </div>
 
       <div class="card">

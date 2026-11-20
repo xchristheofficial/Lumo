@@ -176,7 +176,14 @@ class KnowledgeBase:
 
     @staticmethod
     def _tok(text: str) -> list[str]:
-        return re.findall(r"[a-z0-9]+", text.lower())
+        # light stemming so "giraffes" matches "giraffe" (applied to both
+        # the index and queries, so it stays consistent)
+        out = []
+        for t in re.findall(r"[a-z0-9]+", text.lower()):
+            if len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
+                t = t[:-1]
+            out.append(t)
+        return out
 
     def _vec(self, text: str) -> np.ndarray:
         v = np.zeros(len(self.col), dtype=np.float32)

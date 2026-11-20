@@ -27,12 +27,15 @@ class Trainer:
     """Runs training on a worker thread; subscribers get JSON-able events."""
 
     def __init__(self, model: TinyGPT, tokens: np.ndarray, ckpt_path: str,
-                 on_saved=None, on_progress=None):
+                 on_saved=None, on_progress=None, tokenizer=None,
+                 log_path: str | None = None):
         self.model = model
         self.tokens = tokens
         self.ckpt_path = ckpt_path
         self.on_saved = on_saved
         self.on_progress = on_progress
+        self.tokenizer = tokenizer
+        self.log_path = log_path
         self.lock = threading.Lock()
         self.thread: threading.Thread | None = None
         self.stop_flag = threading.Event()
@@ -90,8 +93,11 @@ class Trainer:
             if self.state["running"]:
                 return {"ok": False, "message": "training already running"}
             self.stop_flag.clear()
-            # quick = fast first pass for the demo; full = longer run
-            if mode == "full":
+            # quick = fast first pass; full/extreme = longer runs;
+            # auto = autopilot — trains forever until you stop it
+            if mode == "auto":
+                max_steps, max_seconds = 10**9, float("inf")
+            elif mode == "full":
                 max_steps, max_seconds = 2500, 1200.0
             elif mode == "extreme":
                 max_steps, max_seconds = 6000, 3600.0
@@ -101,7 +107,8 @@ class Trainer:
                 "running": True, "step": 0, "loss": None, "best_loss": None,
                 "elapsed": 0.0, "tokens_per_s": 0.0, "mode": mode,
                 "max_steps": max_steps, "done": False,
-                "message": f"training ({mode})",
+                "message": ("autopilot training" if mode == "auto"
+                            else f"training ({mode})"),
                 "history": [],
             })
         self.thread = threading.Thread(
@@ -117,6 +124,52 @@ class Trainer:
 
     # ------------------------------ loop ---------------------------------- #
 
+    # --------------------------- experience pool --------------------------- #
+
+    def _refresh_experiences(self, force: bool = False) -> None:
+        """(Re)encode recorded conversations for experience replay."""
+        if self.tokenizer is None:
+            return
+        try:
+            from . import experience
+
+            path = experience.EXPERIENCE_PATH
+            mtime = path.stat().st_mtime if path.exists() else 0.0
+            if not force and getattr(self, "_exp_mtime", None) == mtime:
+                return
+            self._exp_mtime = mtime
+            entries = experience.load_entries()
+            toks: list[int] = []
+            starts: list[int] = []
+            off = 0
+            for e in entries:
+                block = f"user : {e['q']}\nlumo : {e['a']}"
+                ids = self.tokenizer.encode(block)
+                if len(ids) < 8:
+                    continue
+                starts.append(off)
+                toks.extend(ids)
+                off += len(ids)
+            self.exp_tokens = np.asarray(toks, dtype=np.int32) if toks else None
+            self.exp_starts = np.asarray(starts, dtype=np.int64) if starts else None
+        except Exception:  # noqa: BLE001
+            self.exp_tokens = None
+            self.exp_starts = None
+
+    def _log(self, line: str) -> None:
+        if not self.log_path:
+            return
+        try:
+            from pathlib import Path
+
+            Path(self.log_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(self.log_path, "a", encoding="utf-8") as f:
+                f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {line}\n")
+        except OSError:
+            pass
+
+    # -------------------------------- run --------------------------------- #
+
     def _run(self, max_steps: int, max_seconds: float) -> None:
         rng = np.random.default_rng(1234)
         model = self.model
@@ -125,6 +178,11 @@ class Trainer:
         batch = 16
         n = int(tokens.size)
         traj_starts = getattr(self, "starts", None)
+        mode = self.state.get("mode") or "quick"
+        lr_total = 5000 if mode == "auto" else max_steps
+        self._refresh_experiences(force=True)
+        self._log(f"training start mode={mode} max_steps={max_steps} "
+                  f"params={model.num_params():,} corpus_tokens={n:,}")
         t0 = time.time()
         loss_ema = None
         step = 0
@@ -132,18 +190,43 @@ class Trainer:
             while not self.stop_flag.is_set() and step < max_steps:
                 if time.time() - t0 > max_seconds:
                     break
-                # Half the windows are anchored at trajectory starts so the
-                # model always sees question → action → observation chains
-                # together; the rest are random windows over the packed stream.
-                starts = np.empty(batch, dtype=np.int64)
-                half = batch // 2
-                if traj_starts is not None and len(traj_starts):
+                if step % 200 == 0:
+                    self._refresh_experiences()
+
+                # Experience replay: up to ¼ of the batch comes from the
+                # agent's own recorded conversations.
+                n_exp = 0
+                exp_tokens = getattr(self, "exp_tokens", None)
+                exp_starts = getattr(self, "exp_starts", None)
+                if exp_tokens is not None and exp_starts is not None:
+                    valid = exp_starts[exp_starts <= len(exp_tokens) - seq - 2]
+                    if len(valid):
+                        n_exp = min(batch // 4, len(valid))
+                n_cor = batch - n_exp
+
+                # Corpus windows: half anchored at trajectory starts so
+                # question → action → observation chains train together.
+                starts = np.empty(n_cor, dtype=np.int64)
+                half = n_cor // 2
+                if traj_starts is not None and len(traj_starts) and half:
                     anchors = traj_starts[rng.integers(0, len(traj_starts), size=half)]
                     starts[:half] = np.minimum(anchors, max(0, n - seq - 2))
-                starts[half:] = rng.integers(0, max(1, n - seq - 1), size=batch - half)
-                idx = np.stack([tokens[s: s + seq] for s in starts]).astype(np.int32)
-                tgt = np.stack([tokens[s + 1: s + seq + 1] for s in starts]).astype(np.int32)
-                lr = _lr_at(step, max_steps)
+                if n_cor - half:
+                    starts[half:] = rng.integers(0, max(1, n - seq - 1),
+                                                 size=n_cor - half)
+                rows = [tokens[s: s + seq] for s in starts]
+
+                if n_exp:
+                    valid = exp_starts[exp_starts <= len(exp_tokens) - seq - 2]
+                    e_starts = valid[rng.integers(0, len(valid), size=n_exp)]
+                    rows += [exp_tokens[s: s + seq] for s in e_starts]
+
+                idx = np.stack(rows).astype(np.int32)
+                tgt = np.stack([tokens[int(s) + 1: int(s) + seq + 1]
+                                for s in starts[:n_cor]] +
+                               [exp_tokens[int(s) + 1: int(s) + seq + 1]
+                                for s in (e_starts if n_exp else [])]).astype(np.int32)
+                lr = _lr_at(step % lr_total, lr_total)
                 loss = model.train_step(idx, tgt, lr=lr)
                 step += 1
                 loss_ema = loss if loss_ema is None else 0.92 * loss_ema + 0.08 * loss
@@ -171,9 +254,14 @@ class Trainer:
                     except Exception:
                         pass
 
-                # periodic checkpoint so progress is never lost
+                # periodic checkpoint + log so progress is never lost
                 if step % 50 == 0:
                     self._save(step, loss_ema)
+                    n_seen = getattr(self, "exp_starts", None)
+                    n_seen = 0 if n_seen is None else len(n_seen)
+                    self._log(f"step={step} loss={loss_ema:.4f} "
+                              f"raw={loss:.4f} tps={int(tps)} "
+                              f"experiences={n_seen}")
 
             # final save
             self._save(step, loss_ema)
@@ -182,6 +270,9 @@ class Trainer:
                 else "stopped")
             if self.stop_flag.is_set():
                 msg = "stopped"
+            self._log(f"training stop mode={mode} step={step} "
+                      f"loss={loss_ema if loss_ema is not None else float('nan'):.4f} "
+                      f"reason={msg}")
             with self.lock:
                 self.state.update({"running": False, "done": True, "message": msg})
             self._emit({"type": "done", "step": step,
@@ -195,8 +286,9 @@ class Trainer:
 
     def _save(self, step: int, loss) -> None:
         try:
+            lifetime = int(getattr(self, "base_step", 0)) + step
             self.model.save(self.ckpt_path, meta={
-                "step": step,
+                "step": lifetime,
                 "loss": float(loss) if loss is not None else -1.0,
             })
             if self.on_saved:
