@@ -148,7 +148,11 @@ def rule_plan(msg: str) -> Plan:
     # --- memory: recall ---------------------------------------------------- #
     m = re.search(r"\b(?:what|whats|what's)\s+(?:is|was)?\s*my\s+(.+?)[?!.]*$", t)
     if not m:
-        m = re.search(r"\b(?:do you|did you)\s+(?:remember|know)\s+(?:my\s+|about\s+)?(.+?)[?!.]*$", t)
+        # "do you remember X" is memory; "do you know about X" is knowledge —
+        # the know-form only counts as memory when it says "my"
+        m = re.search(r"\b(?:do you|did you)\s+remember\s+(?:my\s+|about\s+)?(.+?)[?!.]*$", t)
+    if not m:
+        m = re.search(r"\b(?:do you|did you)\s+know\s+(?:about\s+)?my\s+(.+?)[?!.]*$", t)
     if not m:
         m = re.search(r"\b(?:what did i|recall)\b\s*(?:tell you\s+|about\s+)?(.+?)[?!.]*$", t)
     if m:
@@ -185,8 +189,10 @@ def rule_plan(msg: str) -> Plan:
         return p
 
     # --- knowledge search ---------------------------------------------------- #
-    if re.search(r"\b(what|who|where|why|how|tell me|explain|define|information about|"
-                 r"facts about|know about|learn about|describe)\b", t):
+    if re.search(r"\b(what|who|where|why|when|how|which|whose|whom|tell me|explain|"
+                 r"define|information about|facts about|know about|learn about|"
+                 r"describe|give me|list|name|recommend|suggest|difference between|"
+                 r"opinion|think about|mean)\b", t):
         p.thoughts.append("i will search my knowledge base .")
         p.actions.append(("search", re.sub(r"[^a-z0-9\s]", " ", t)))
         return p
@@ -525,10 +531,25 @@ class Agent:
                         else:
                             answer = f"{arg} = {obs}" if not obs.startswith("error") else obs
                     elif tool == "search":
-                        answer = obs if not obs.startswith("no relevant") else \
-                            ("i could not find that in my knowledge base . my offline library "
-                             "covers science , nature , history , and computing basics — "
-                             "try asking about one of those .")
+                        if not obs.startswith("no relevant"):
+                            answer = obs
+                        else:
+                            # honest, topic-aware miss: no internet, no provider
+                            # APIs — but say what the library does cover
+                            from .corpus import PASSAGES as _P
+                            _topic = re.sub(
+                                r"^(?:what|who|where|when|why|how|which|whose|whom|is|was|"
+                                r"were|do|does|did|the|a|an|about|of|tell|me|give|list|name|"
+                                r"explain|define|please|information|facts|know|learn|"
+                                r"describe|opinion|think)\s+", "", t)
+                            _topic = re.sub(r"[^a-z0-9\s]", " ", _topic).strip()
+                            _topic = " ".join(_topic.split()[:5]) or "that"
+                            answer = (
+                                f"i do not have a fact about '{_topic}' in my offline "
+                                f"library yet — i run with no internet and no provider "
+                                f"apis , so i only know my {len(_P)} passages : science , "
+                                f"history , geography , people , computing , sports , food "
+                                f"and more . try rephrasing , or ask about one of those .")
                 if answer is None:
                     answer = "done ."
                 a_lines = _hist_transcript(a_thoughts, a_actions, answer)
