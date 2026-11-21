@@ -34,7 +34,7 @@ class Tokenizer:
         return len(self.itos)
 
     @classmethod
-    def train(cls, text: str, cap: int = 4500) -> "Tokenizer":
+    def train(cls, text: str, cap: int = 14000) -> "Tokenizer":
         counts: dict[str, int] = {}
         for tok in TOKEN_RE.findall(text.lower()):
             counts[tok] = counts.get(tok, 0) + 1
@@ -168,7 +168,7 @@ PASSAGES: list[tuple[str, str]] = [
     ("mozart composer classical prodigy", "Wolfgang Amadeus Mozart was an Austrian composer who performed for European royalty as a child. He composed over six hundred works, including operas, symphonies, and concertos, before his death at thirty-five."),
     ("jazz music origin new orleans", "Jazz originated in New Orleans around the early nineteen hundreds, blending blues, ragtime, and African rhythms. It is known for swing, improvisation, and instruments like the trumpet, saxophone, and double bass."),
     ("hip hop music culture turntables", "Hip hop culture began in the Bronx in the nineteen seventies with DJing, rapping, breakdancing, and graffiti. Turntables became instruments as DJs isolated and extended drum breaks for dancers."),
-    ("renaissance art italy painting", "The Renaissance was a revival of art and learning that began in Italy in the fourteen hundreds. Artists like Leonardo da Vinci and Michelangelo used perspective and anatomy to create lifelike masterpieces."),
+    ("renaissance art italy painting leonardo vinci michelangelo", "The Renaissance was a revival of art and learning that began in Italy in the fourteen hundreds. Artists like Leonardo da Vinci and Michelangelo used perspective and anatomy to create lifelike masterpieces."),
     # ── sports ────────────────────────────────────────────────────────────
     ("football world cup sport", "The FIFA World Cup is the biggest football tournament, held every four years between national teams. Brazil has won it the most times. The two thousand twenty-two final in Qatar is widely called the greatest ever."),
     ("marathon race sport distance", "A marathon is a forty-two point one nine five kilometer race. It is named after the ancient Greek messenger who ran from Marathon to Athens to announce a victory, then collapsed and died."),
@@ -190,6 +190,281 @@ PASSAGES: list[tuple[str, str]] = [
     ("maps projection geography", "Maps flatten the round Earth onto paper, which always distorts something. The Mercator map preserves shapes and angles for navigation but makes polar regions look far larger than they really are."),
     ("refrigerator food cold appliance", "A refrigerator slows bacterial growth by keeping food at about four degrees Celsius. A coolant evaporates inside the coils, absorbing heat from the interior, then releases it outside the appliance."),
 ]
+
+
+# --------------------------------------------------------------------------- #
+# Knowledge mega-expansion — table-derived passages generated locally.
+# Countries & capitals, periodic elements, history timeline, geography,
+# computing, math and science. No downloads, no provider APIs.
+# --------------------------------------------------------------------------- #
+
+_COUNTRIES: list[tuple[str, str, str]] = [
+    ("afghanistan", "kabul", "central asia"), ("albania", "tirana", "europe"),
+    ("algeria", "algiers", "north africa"), ("angola", "luanda", "south africa"),
+    ("argentina", "buenos aires", "south america"), ("armenia", "yerevan", "west asia"),
+    ("australia", "canberra", "oceania"), ("austria", "vienna", "europe"),
+    ("azerbaijan", "baku", "west asia"), ("bahamas", "nassau", "caribbean"),
+    ("bahrain", "manama", "west asia"), ("bangladesh", "dhaka", "south asia"),
+    ("belarus", "minsk", "europe"), ("belgium", "brussels", "europe"),
+    ("belize", "belmopan", "central america"), ("benin", "porto-novo", "west africa"),
+    ("bhutan", "thimphu", "south asia"), ("bolivia", "sucre", "south america"),
+    ("bosnia", "sarajevo", "europe"), ("botswana", "gaborone", "south africa"),
+    ("brazil", "brasilia", "south america"), ("bulgaria", "sofia", "europe"),
+    ("burkina faso", "ouagadougou", "west africa"), ("burundi", "gitega", "east africa"),
+    ("cambodia", "phnom penh", "southeast asia"), ("cameroon", "yaounde", "central africa"),
+    ("canada", "ottawa", "north america"), ("chad", "ndjamena", "central africa"),
+    ("chile", "santiago", "south america"), ("china", "beijing", "east asia"),
+    ("colombia", "bogota", "south america"),
+    ("dr congo", "kinshasa", "central africa"), ("costa rica", "san jose", "central america"),
+    ("croatia", "zagreb", "europe"), ("cuba", "havana", "caribbean"),
+    ("cyprus", "nicosia", "europe"), ("czechia", "prague", "europe"),
+    ("denmark", "copenhagen", "europe"), ("djibouti", "djibouti", "east africa"),
+    ("dominican republic", "santo domingo", "caribbean"), ("ecuador", "quito", "south america"),
+    ("egypt", "cairo", "north africa"), ("el salvador", "san salvador", "central america"),
+    ("estonia", "tallinn", "europe"), ("eswatini", "mbabane", "south africa"),
+    ("ethiopia", "addis ababa", "east africa"), ("finland", "helsinki", "europe"),
+    ("france", "paris", "western europe"), ("gabon", "libreville", "central africa"),
+    ("georgia", "tbilisi", "west asia"), ("germany", "berlin", "europe"),
+    ("ghana", "accra", "west africa"), ("greece", "athens", "europe"),
+    ("guatemala", "guatemala city", "central america"), ("guinea", "conakry", "west africa"),
+    ("guyana", "georgetown", "south america"), ("haiti", "port-au-prince", "caribbean"),
+    ("hungary", "budapest", "europe"), ("iceland", "reykjavik", "europe"),
+    ("india", "new delhi", "south asia"), ("indonesia", "jakarta", "southeast asia"),
+    ("iran", "tehran", "west asia"), ("iraq", "baghdad", "west asia"),
+    ("ireland", "dublin", "europe"), ("israel", "jerusalem", "west asia"),
+    ("italy", "rome", "europe"), ("ivory coast", "yamoussoukro", "west africa"),
+    ("jamaica", "kingston", "caribbean"), ("japan", "tokyo", "east asia"),
+    ("jordan", "amman", "west asia"), ("kazakhstan", "astana", "central asia"),
+    ("kenya", "nairobi", "east africa"), ("kuwait", "kuwait city", "west asia"),
+    ("kyrgyzstan", "bishkek", "central asia"), ("laos", "vientiane", "southeast asia"),
+    ("latvia", "riga", "europe"), ("lebanon", "beirut", "west asia"),
+    ("lesotho", "maseru", "south africa"), ("liberia", "monrovia", "west africa"),
+    ("libya", "tripoli", "north africa"), ("lithuania", "vilnius", "europe"),
+    ("luxembourg", "luxembourg", "europe"), ("madagascar", "antananarivo", "east africa"),
+    ("malawi", "lilongwe", "east africa"), ("malaysia", "kuala lumpur", "southeast asia"),
+    ("mali", "bamako", "west africa"), ("mauritania", "nouakchott", "west africa"),
+    ("mexico", "mexico city", "north america"), ("moldova", "chisinau", "europe"),
+    ("mongolia", "ulaanbaatar", "east asia"), ("montenegro", "podgorica", "europe"),
+    ("morocco", "rabat", "north africa"), ("mozambique", "maputo", "east africa"),
+    ("myanmar", "naypyidaw", "southeast asia"), ("namibia", "windhoek", "south africa"),
+    ("nepal", "kathmandu", "south asia"), ("netherlands", "amsterdam", "europe"),
+    ("new zealand", "wellington", "oceania"), ("nicaragua", "managua", "central america"),
+    ("niger", "niamey", "west africa"), ("nigeria", "abuja", "west africa"),
+    ("north korea", "pyongyang", "east asia"), ("north macedonia", "skopje", "europe"),
+    ("norway", "oslo", "europe"), ("oman", "muscat", "west asia"),
+    ("pakistan", "islamabad", "south asia"), ("panama", "panama city", "central america"),
+    ("papua new guinea", "port moresby", "oceania"), ("paraguay", "asuncion", "south america"),
+    ("peru", "lima", "south america"), ("philippines", "manila", "southeast asia"),
+    ("poland", "warsaw", "europe"), ("portugal", "lisbon", "europe"),
+    ("qatar", "doha", "west asia"), ("romania", "bucharest", "europe"),
+    ("russia", "moscow", "east europe"), ("rwanda", "kigali", "east africa"),
+    ("saudi arabia", "riyadh", "west asia"), ("senegal", "dakar", "west africa"),
+    ("serbia", "belgrade", "europe"), ("sierra leone", "freetown", "west africa"),
+    ("slovakia", "bratislava", "europe"), ("slovenia", "ljubljana", "europe"),
+    ("somalia", "mogadishu", "east africa"), ("south africa", "pretoria", "south africa"),
+    ("south korea", "seoul", "east asia"), ("south sudan", "juba", "east africa"),
+    ("spain", "madrid", "europe"), ("sri lanka", "colombo", "south asia"),
+    ("sudan", "khartoum", "north africa"), ("suriname", "paramaribo", "south america"),
+    ("sweden", "stockholm", "europe"), ("switzerland", "bern", "europe"),
+    ("syria", "damascus", "west asia"), ("taiwan", "taipei", "east asia"),
+    ("tajikistan", "dushanbe", "central asia"), ("tanzania", "dodoma", "east africa"),
+    ("thailand", "bangkok", "southeast asia"), ("togo", "lome", "west africa"),
+    ("tunisia", "tunis", "north africa"), ("turkey", "ankara", "west asia"),
+    ("turkmenistan", "ashgabat", "central asia"), ("uganda", "kampala", "east africa"),
+    ("ukraine", "kyiv", "europe"), ("united arab emirates", "abu dhabi", "west asia"),
+    ("united kingdom", "london", "europe"), ("united states", "washington dc", "north america"),
+    ("uruguay", "montevideo", "south america"), ("uzbekistan", "tashkent", "central asia"),
+    ("venezuela", "caracas", "south america"), ("vietnam", "hanoi", "southeast asia"),
+    ("yemen", "sanaa", "west asia"), ("zambia", "lusaka", "east africa"),
+    ("zimbabwe", "harare", "east africa"),
+]
+
+_ELEMENTS: list[tuple[int, str, str, str]] = [
+    (1, "H", "hydrogen", "lightest element"), (2, "He", "helium", "noble gas"),
+    (3, "Li", "lithium", "alkali metal"), (4, "Be", "beryllium", "alkaline earth metal"),
+    (5, "B", "boron", "metalloid"), (6, "C", "carbon", "nonmetal"),
+    (7, "N", "nitrogen", "nonmetal"), (8, "O", "oxygen", "nonmetal"),
+    (9, "F", "fluorine", "halogen"), (10, "Ne", "neon", "noble gas"),
+    (11, "Na", "sodium", "alkali metal"), (12, "Mg", "magnesium", "alkaline earth metal"),
+    (13, "Al", "aluminium", "post-transition metal"), (14, "Si", "silicon", "metalloid"),
+    (15, "P", "phosphorus", "nonmetal"), (16, "S", "sulfur", "nonmetal"),
+    (17, "Cl", "chlorine", "halogen"), (18, "Ar", "argon", "noble gas"),
+    (19, "K", "potassium", "alkali metal"), (20, "Ca", "calcium", "alkaline earth metal"),
+    (22, "Ti", "titanium", "transition metal"), (24, "Cr", "chromium", "transition metal"),
+    (25, "Mn", "manganese", "transition metal"), (26, "Fe", "iron", "transition metal"),
+    (27, "Co", "cobalt", "transition metal"), (28, "Ni", "nickel", "transition metal"),
+    (29, "Cu", "copper", "transition metal"), (30, "Zn", "zinc", "transition metal"),
+    (31, "Ga", "gallium", "post-transition metal"), (32, "Ge", "germanium", "metalloid"),
+    (33, "As", "arsenic", "metalloid"), (34, "Se", "selenium", "nonmetal"),
+    (35, "Br", "bromine", "halogen"), (36, "Kr", "krypton", "noble gas"),
+    (37, "Rb", "rubidium", "alkali metal"), (38, "Sr", "strontium", "alkaline earth metal"),
+    (40, "Zr", "zirconium", "transition metal"), (42, "Mo", "molybdenum", "transition metal"),
+    (46, "Pd", "palladium", "transition metal"), (47, "Ag", "silver", "transition metal"),
+    (48, "Cd", "cadmium", "transition metal"), (49, "In", "indium", "post-transition metal"),
+    (50, "Sn", "tin", "post-transition metal"), (53, "I", "iodine", "halogen"),
+    (54, "Xe", "xenon", "noble gas"), (55, "Cs", "caesium", "alkali metal"),
+    (56, "Ba", "barium", "alkaline earth metal"), (74, "W", "tungsten", "transition metal"),
+    (78, "Pt", "platinum", "transition metal"), (79, "Au", "gold", "transition metal"),
+    (80, "Hg", "mercury", "transition metal"), (82, "Pb", "lead", "post-transition metal"),
+    (83, "Bi", "bismuth", "post-transition metal"), (92, "U", "uranium", "actinide"),
+    (94, "Pu", "plutonium", "actinide"),
+]
+
+_HISTORY: list[tuple[int, str]] = [
+    (3000, "the first pyramids were built in egypt"), (776, "the first olympic games were held in greece"),
+    (509, "the roman republic was founded"), (221, "qin unified china"),
+    (476, "the western roman empire fell"), (622, "the islamic calendar began with the hijra"),
+    (800, "charlemagne was crowned emperor of the romans"),
+    (1066, "the normans conquered england at hastings"), (1215, "the magna carta was sealed at runnymede"),
+    (1347, "the black death reached europe"), (1440, "johannes gutenberg developed the printing press"),
+    (1453, "constantinople fell to the ottomans"), (1492, "columbus reached the americas"),
+    (1503, "leonardo da vinci began painting the mona lisa"), (1517, "martin luther posted his ninety-five theses"),
+    (1543, "copernicus published his heliocentric model"), (1600, "shakespeare was at the height of his career"),
+    (1607, "jamestown became the first permanent english settlement in america"),
+    (1687, "isaac newton published his principia"), (1776, "the united states declared independence"),
+    (1789, "the french revolution began with the storming of the bastille"),
+    (1804, "napoleon crowned himself emperor of france"), (1815, "the battle of waterloo ended napoleon's rule"),
+    (1859, "darwin published on the origin of species"), (1863, "the emancipation proclamation was issued in the us"),
+    (1869, "the suez canal opened"), (1876, "alexander graham bell patented the telephone"),
+    (1879, "thomas edison demonstrated the incandescent light bulb"),
+    (1903, "the wright brothers made the first powered flight"),
+    (1905, "albert einstein published the theory of special relativity"),
+    (1914, "world war one began"), (1918, "world war one ended"),
+    (1920, "women gained the right to vote in the united states"),
+    (1928, "alexander fleming discovered penicillin"), (1929, "the wall street crash triggered the great depression"),
+    (1936, "the spanish civil war began"), (1939, "world war two began"),
+    (1945, "world war two ended and the united nations was founded"),
+    (1947, "india gained independence from britain"), (1948, "the state of israel was declared"),
+    (1953, "watson and crick described the structure of dna"),
+    (1957, "the soviet union launched sputnik, the first satellite"),
+    (1961, "yuri gagarin became the first human in space"),
+    (1969, "apollo eleven landed the first humans on the moon"),
+    (1971, "the first microprocessor was invented at intel"),
+    (1989, "the berlin wall fell"), (1991, "the soviet union dissolved"),
+    (1990, "the world wide web was proposed by tim berners-lee"),
+    (2001, "the wikipedia encyclopedia was launched"),
+    (2007, "the first apple iphone was released"),
+    (2015, "the paris climate agreement was adopted"),
+]
+
+_GEOG: list[tuple[str, str]] = [
+    ("nile river africa", "The Nile is a major river in northeastern Africa flowing north into the Mediterranean Sea. At about 6,650 kilometers it is often counted as the longest river in the world, and it has supported Egyptian life for thousands of years."),
+    ("amazon river south america", "The Amazon is the largest river by discharge volume on Earth, flowing through Brazil and Peru to the Atlantic Ocean. The Amazon rainforest around it produces a large share of the world's oxygen and hosts unmatched biodiversity."),
+    ("mississippi river usa", "The Mississippi River drains much of the central United States, flowing about 3,700 kilometers from Minnesota to the Gulf of Mexico. Mark Twain's stories made it famous in American literature."),
+    ("yangtze river china", "The Yangtze is Asia's longest river, flowing about 6,300 kilometers across China to the East China Sea. It powers huge hydroelectric dams and irrigates major farmlands."),
+    ("ganga ganges river india", "The Ganges River flows from the Himalayas across northern India and Bangladesh to the sea. It is sacred to Hindus and supports one of the densest river basins on Earth."),
+    ("mount everest himalaya", "Mount Everest is the tallest mountain above sea level at 8,849 meters, standing in the Himalayas on the border of Nepal and Tibet. Climbers call its Nepali name Sagarmatha."),
+    ("k2 mountain karakoram", "K2 is the second tallest mountain in the world at 8,611 meters, rising in the Karakoram range on the Pakistan-China border. It is considered harder to climb than Everest."),
+    ("kilimanjaro tanzania", "Mount Kilimanjaro in Tanzania is Africa's highest peak at 5,895 meters. It is a dormant volcano with three cones and snow near its summit despite sitting near the equator."),
+    ("andes mountains south america", "The Andes are the longest continental mountain range, running about 7,000 kilometers down the western edge of South America. They host the Atacama Desert and many active volcanoes."),
+    ("rocky mountains north america", "The Rocky Mountains stretch more than 4,800 kilometers through western North America from Canada to New Mexico, forming a major continental divide."),
+    ("sahara desert africa", "The Sahara is the largest hot desert in the world, covering about 9.2 million square kilometers of northern Africa. It has sand seas, rocky plateaus and night temperatures near freezing."),
+    ("gobi desert asia", "The Gobi is a cold desert spanning southern Mongolia and northern China. Dinosaurs roamed it, and it sits in the rain shadow of the Himalayas."),
+    ("antarctica polar", "Antarctica is the coldest, driest and windiest continent, covered by an ice sheet holding most of the world's fresh water. It has no permanent population, only research stations."),
+    ("arctic ocean north", "The Arctic Ocean is the smallest and shallowest ocean, centered on the North Pole. Its sea ice melts and refreezes with the seasons and is shrinking as the climate warms."),
+    ("great barrier reef australia", "The Great Barrier Reef off northeast Australia is the world's largest coral reef system, visible from space and home to thousands of marine species."),
+    ("grand canyon usa", "The Grand Canyon in Arizona was carved by the Colorado River over millions of years. It exposes rock layers nearly two billion years old."),
+    ("victoria falls africa", "Victoria Falls on the border of Zambia and Zimbabwe is one of the largest waterfalls in the world by combined width and height, known locally as Mosi-oa-Tunya, the smoke that thunders."),
+    ("pacific ocean", "The Pacific Ocean is the largest and deepest ocean, covering about a third of Earth's surface. It contains the Mariana Trench, the deepest known point in the ocean."),
+    ("atlantic ocean", "The Atlantic Ocean is the second largest ocean, separating the Americas from Europe and Africa. The mid-Atlantic ridge runs along its floor where new crust forms."),
+    ("indian ocean", "The Indian Ocean is the warmest ocean, bounded by Asia, Africa and Australia. Monsoon winds have guided trade across it for centuries."),
+]
+
+_COMPUTING: list[tuple[str, str]] = [
+    ("binary code computers bits", "Computers store and process information as binary code, strings of zeros and ones called bits. Eight bits form a byte, and all text, images and sound are ultimately encoded as numbers in base two."),
+    ("cpu processor computing", "The central processing unit, or CPU, is the computer's brain. It fetches instructions from memory, decodes them and executes arithmetic and logic, billions of times per second."),
+    ("ram memory computing", "RAM is a computer's short-term working memory. It is fast but volatile: contents vanish when power is off, which is why documents must be saved to storage."),
+    ("hard drive storage", "Hard drives and SSDs hold data long term. Hard drives use spinning magnetic platters, while solid-state drives use flash memory with no moving parts and much faster access."),
+    ("internet network computing", "The internet is a global network of networks that exchanges data using standardized protocols. The World Wide Web is one service that runs on top of it."),
+    ("http web protocol", "HTTP is the protocol that moves web pages between browsers and servers. HTTPS adds TLS encryption so eavesdroppers cannot read the traffic."),
+    ("database storage queries", "A database stores structured data that programs query and update. Relational databases keep tables with keys, while document stores keep flexible records."),
+    ("algorithm computing", "An algorithm is a precise finite sequence of steps that solves a problem or performs a computation. Sorting, searching and routing are classic examples."),
+    ("compiler programming", "A compiler translates source code written in a programming language into machine code that a computer can execute directly. Interpreters run the code step by step instead."),
+    ("operating system computing", "An operating system manages hardware and provides services to programs: memory, processors, files, devices and networking. Linux, Windows and macOS are common examples."),
+    ("encryption security", "Encryption transforms readable data into ciphertext that only someone with the right key can unlock. It protects messages, passwords and payments on the internet."),
+    ("password security", "A password is a secret string that proves identity. Strong passwords are long and unique, and password managers generate and store them so people do not reuse weak ones."),
+    ("wifi network", "Wi-Fi is wireless networking based on the IEEE 802.11 standards. It uses radio waves to link devices to a local network and then to the internet."),
+    ("bluetooth devices", "Bluetooth is a short-range wireless protocol for connecting devices like headphones and keyboards. It hops across many radio frequencies to avoid interference."),
+    ("cloud computing", "Cloud computing delivers computing resources over the internet on demand. Instead of owning servers, organizations rent storage and compute and pay for what they use."),
+    ("artificial intelligence computing", "Artificial intelligence is the field of making machines perform tasks that normally need human intelligence, such as recognizing patterns, understanding language and making decisions."),
+    ("neural network computing", "An artificial neural network is a model of connected units inspired by brains. Layers of weights are tuned by gradient descent so the network maps inputs to desired outputs."),
+    ("transformer model architecture", "A transformer is a neural network architecture built on self-attention, letting every token weigh every other token. It underlies modern language models and Lumo uses a tiny decoder-only version."),
+    ("git version control", "Git is a distributed version control system that records snapshots of a project. Commits form a history, branches isolate work, and remotes share it with others."),
+    ("spam filtering computing", "Spam filters classify unwanted email using rules and learned statistics. They look at sender reputation, message content and links to decide what to block."),
+]
+
+_MATHFACTS: list[tuple[str, str]] = [
+    ("geometry shapes math", "Geometry studies shapes, sizes and positions. A circle's area is pi times the radius squared, a triangle's angles sum to 180 degrees, and the Pythagorean theorem links the sides of right triangles."),
+    ("algebra equations math", "Algebra uses symbols and rules to solve for unknowns. Rearranging an equation keeps both sides balanced, which is how formulas are derived and solved."),
+    ("prime numbers math", "A prime number is divisible only by one and itself. There are infinitely many primes, and every integer greater than one factors uniquely into primes."),
+    ("fractions decimals math", "Fractions express parts of a whole as one number over another. Dividing the top by the bottom converts a fraction to a decimal, and percentages are fractions with denominator one hundred."),
+    ("percentages math", "A percentage means per one hundred. To find p percent of x compute x times p divided by 100, and to express a ratio as a percentage multiply it by one hundred."),
+    ("statistics average math", "The mean of a set of numbers is their sum divided by the count. The median is the middle value and the mode is the most frequent one."),
+    ("probability math", "Probability measures how likely an event is, from zero impossible to one certain. For equally likely outcomes it is the favorable count divided by the total count."),
+    ("pythagorean theorem math", "The Pythagorean theorem states that in a right triangle the square of the hypotenuse equals the sum of the squares of the other two sides: a squared plus b squared equals c squared."),
+    ("order of operations math", "Order of operations requires parentheses first, then exponents, then multiplication and division from left to right, and finally addition and subtraction from left to right."),
+    ("integers number line math", "Integers include the whole numbers and their negatives on the number line. Adding a negative moves left, and subtracting a negative moves right."),
+    ("area perimeter math", "Perimeter is the distance around a shape while area measures the surface inside it. A rectangle's perimeter is twice length plus width and its area is length times width."),
+    ("volume geometry math", "Volume measures the space a solid occupies. A box is length times width times height, a cylinder is pi r squared times height, and a sphere is four thirds pi r cubed."),
+    ("ratios proportions math", "A ratio compares two quantities, and a proportion states that two ratios are equal. Cross multiplication solves for an unknown in a proportion."),
+    ("roman numerals math", "Roman numerals use letters for values: I is one, V five, X ten, L fifty, C one hundred, D five hundred and M one thousand, with subtractive pairs like IV for four."),
+    ("fibonacci sequence math", "The Fibonacci sequence starts zero and one and each later term is the previous two added: zero, one, one, two, three, five, eight, thirteen. It appears in shells, leaves and spirals."),
+]
+
+_SCIENCE: list[tuple[str, str]] = [
+    ("gravity physics force", "Gravity is the attraction between masses. Isaac Newton showed it keeps planets in orbit, and Einstein later described it as curved spacetime caused by mass and energy."),
+    ("energy physics conservation", "Energy cannot be created or destroyed, only transformed. Kinetic energy is motion, potential energy is stored position, and heat is disordered microscopic motion."),
+    ("electricity physics current", "Electric current is the flow of charge, measured in amperes. Voltage pushes the charge and resistance opposes it, related by Ohm's law: voltage equals current times resistance."),
+    ("magnetism physics", "Magnets have north and south poles that attract opposite poles and repel like ones. Moving electric charges create magnetic fields, which is how motors and generators work."),
+    ("light optics physics", "Light travels in waves and also behaves like particles called photons. It reflects off mirrors, refracts through glass, and the visible spectrum runs from red through violet."),
+    ("sound waves physics", "Sound is a pressure wave that needs a medium. Its pitch follows frequency and its loudness follows amplitude, and it travels faster in solids than in air."),
+    ("photosynthesis biology", "Photosynthesis lets plants convert sunlight, water and carbon dioxide into glucose and oxygen. It powers most food chains and produces much of the oxygen in the atmosphere."),
+    ("cell biology unit of life", "The cell is the basic unit of life. Animal cells lack a wall while plant cells have cellulose walls and chloroplasts, and bacteria cells have no nucleus at all."),
+    ("dna genetics biology", "DNA is a double helix of nucleotide bases: adenine pairs with thymine and cytosine with guanine. Genes are DNA segments that code for proteins inherited from parents."),
+    ("evolution biology", "Evolution is the change of species over generations through natural selection. Traits that help survival and reproduction become more common in the population."),
+    ("human heart anatomy", "The human heart pumps blood with four chambers. The right side sends blood to the lungs and the left side sends oxygen-rich blood around the whole body, beating about one hundred thousand times a day."),
+    ("human brain anatomy", "The human brain contains billions of neurons coordinating thought, memory and movement. Its wrinkled cortex handles senses and reasoning while the cerebellum manages balance."),
+    ("skeleton human body", "An adult human skeleton has 206 bones that support the body, protect organs and produce blood cells in the marrow. The smallest bone is the stapes in the middle ear."),
+    ("digestion human body", "Digestion breaks food into absorbable nutrients. Chewing and stomach acid start the process, enzymes in the small intestine finish it, and the gut lining absorbs the products."),
+    ("periodic table chemistry", "The periodic table arranges elements by atomic number into groups and periods. Elements in the same group share similar chemistry, like the noble gases or the alkali metals."),
+    ("atoms chemistry", "Atoms are the building blocks of matter with a nucleus of protons and neutrons orbited by electrons. The number of protons defines the element."),
+    ("chemical bond chemistry", "Chemical bonds hold atoms together. Ionic bonds transfer electrons between atoms, while covalent bonds share electron pairs, and metallic bonds delocalize electrons across a metal."),
+    ("acids bases chemistry", "Acids donate protons in solution and bases accept them. The pH scale from zero to fourteen measures acidity, with seven neutral, and mixing an acid with a base makes a salt and water."),
+    ("water chemistry h2o", "Water is a polar molecule of two hydrogens and one oxygen. Its hydrogen bonding gives it high heat capacity, surface tension and the ability to dissolve many salts."),
+    ("ozone layer atmosphere", "The ozone layer high in the stratosphere absorbs most of the Sun's ultraviolet radiation. The Montreal Protocol phased out chemicals that were depleting it."),
+    ("greenhouse effect climate", "The greenhouse effect warms Earth's surface. Gases like carbon dioxide and methane trap outgoing infrared radiation, and extra human emissions are amplifying the warming."),
+    ("earth orbit seasons", "Earth orbits the Sun once a year while tilted on its axis. The tilt, not distance, causes seasons: each hemisphere leans toward the Sun during its summer."),
+    ("moon phases astronomy", "The Moon's phases come from its position relative to Earth and Sun. As it orbits, the sunlit half we see changes from new moon through full moon and back."),
+    ("solar system astronomy", "The solar system holds the Sun and everything orbiting it: eight planets, dwarf planets, moons, asteroids and comets. The four inner planets are rocky and the outer four are giant."),
+    ("stars astronomy fusion", "Stars are balls of plasma fusing hydrogen into helium in their cores. Their mass decides their fate: small ones fade as white dwarfs, massive ones explode as supernovae."),
+    ("galaxy astronomy", "A galaxy is a gravitationally bound system of stars, gas and dust. The Milky Way is a barred spiral holding hundreds of billions of stars including our Sun."),
+    ("fossil record geology", "Fossils preserve remains or traces of ancient life in rock. They show how species changed over time and help date the layers in which they are found."),
+    ("plate tectonics geology", "Earth's outer shell is broken into plates that drift on the mantle. Collisions build mountains, spreading ridges create crust, and sliding faults cause earthquakes."),
+    ("volcano geology", "A volcano is an opening where magma, ash and gas escape from below the surface. The Pacific Ring of Fire marks many of the world's most active volcanoes."),
+]
+
+# ── extend the passage pool ──────────────────────────────────────────────────
+for _c, _cap, _reg in _COUNTRIES:
+    PASSAGES.append((
+        f"{_c} {_cap} country {_reg}",
+        f"{_c.title()} is a country in {_reg}. Its capital is {_cap.title()}. "
+        f"It is one of the many nations represented in Lumo's geography knowledge base.",
+    ))
+for _num, _sym, _name, _cat in _ELEMENTS:
+    PASSAGES.append((
+        f"element {_name} {_sym} chemistry",
+        f"{_name.title()} ({_sym}) is chemical element number {_num}. It is classified as {_cat}. "
+        f"Its symbol is {_sym} on the periodic table.",
+    ))
+for _year, _event in _HISTORY:
+    PASSAGES.append((
+        f"history {_year} timeline",
+        f"In {_year}, {_event}. This event is part of the historical record kept in Lumo's knowledge base.",
+    ))
+PASSAGES.extend(_GEOG)
+PASSAGES.extend(_COMPUTING)
+PASSAGES.extend(_MATHFACTS)
+PASSAGES.extend(_SCIENCE)
 
 
 # --------------------------------------------------------------------------- #
@@ -265,6 +540,59 @@ def _gen_arithmetic(rng: random.Random, n: int) -> list[str]:
         result = _fmt_num(_safe_arith(a, b, sym))
         q = _arith_question(a, b, sym, rng)
         expr = f"{a} {sym} {b}"
+        finish_style = rng.randrange(3)
+        if finish_style == 0:
+            finish = f"{expr} = {result} ."
+        elif finish_style == 1:
+            finish = f"the answer is {result} ."
+        else:
+            finish = f"it equals {result} ."
+        out.append(
+            f"user : {q}\nlumo : {rng.choice(thoughts)}\n"
+            f"action : calculator {expr}\nobservation : {result}\n"
+            f"lumo : i have the result .\nfinish : {finish}"
+        )
+    return out
+
+
+def _gen_drills(rng: random.Random, n: int) -> list[str]:
+    """Master-the-drill bank: full multiplication table (1-100), exact
+    division, squares and percentages — thousands of distinct facts."""
+    out = []
+    thoughts = [
+        "i will use the calculator tool .",
+        "let me compute that with the calculator .",
+        "the calculator can handle this arithmetic .",
+        "i should calculate the result .",
+    ]
+    # deterministic pool: every (a, b) pair in 1..100 for *, plus / and %
+    pool: list[tuple[int, int, str]] = []
+    for a in range(1, 101):
+        for b in range(1, 101):
+            pool.append((a, b, "*"))
+            if a % b == 0:
+                pool.append((a, b, "/"))
+    for p in range(1, 101, 5):            # percentages 5,10,...,100 of 1..400
+        for x in range(1, 401, 7):
+            pool.append((p, x, "%"))
+    rng.shuffle(pool)
+    for i in range(n):
+        a, b, kind = pool[i % len(pool)]
+        if kind == "*":
+            sym, expr, result = "*", f"{a} * {b}", _fmt_num(a * b)
+        elif kind == "/":
+            sym, expr, result = "/", f"{a} / {b}", _fmt_num(a / b)
+        else:
+            # p percent of x -> calculator-safe expression
+            sym, expr, result = "%", f"{b} * ({a} / 100)", _fmt_num(b * (a / 100))
+        if kind == "%":
+            q = rng.choice([
+                f"what is {a} percent of {b} ?",
+                f"how much is {a}% of {b} ?",
+                f"find {a} percent of {b}",
+            ])
+        else:
+            q = _arith_question(a, b, sym, rng)
         finish_style = rng.randrange(3)
         if finish_style == 0:
             finish = f"{expr} = {result} ."
@@ -621,17 +949,21 @@ def _safe_arith_eval(expr: str) -> float:
     return float(ev(ast.parse(expr, mode="eval")))
 
 
-def build_blocks(seed: int = 7) -> list[str]:
+def build_blocks(seed: int = 7, scale: float = 1.0) -> list[str]:
+    def s(n: int) -> int:
+        return max(50, int(n * scale))
+
     rng = random.Random(seed)
     blocks: list[str] = [SYS_LINE]
-    blocks += _gen_arithmetic(rng, 1100)
-    blocks += _gen_multistep(rng, 160)
-    blocks += _gen_time(rng, 240)
-    blocks += _gen_memory(rng, 420)
-    blocks += _gen_knowledge(rng, 600)
-    blocks += _gen_chat(rng, 340)
-    blocks += _gen_two_turn(rng, 420)
-    blocks += _gen_conversions(rng, 300)
+    blocks += _gen_arithmetic(rng, s(4000))
+    blocks += _gen_drills(rng, s(4500))
+    blocks += _gen_multistep(rng, s(600))
+    blocks += _gen_time(rng, s(600))
+    blocks += _gen_memory(rng, s(1500))
+    blocks += _gen_knowledge(rng, s(7000))
+    blocks += _gen_chat(rng, s(1000))
+    blocks += _gen_two_turn(rng, s(2000))
+    blocks += _gen_conversions(rng, s(1500))
     rng.shuffle(blocks)
     return blocks
 
@@ -648,7 +980,7 @@ class CorpusBundle:
     starts: np.ndarray  # token offsets where each trajectory begins
 
 
-def build_bundle(cap: int = 4500, seed: int = 7) -> CorpusBundle:
+def build_bundle(cap: int = 14000, seed: int = 7) -> CorpusBundle:
     blocks = build_blocks(seed)
     text = ("\n" + SYS_LINE + "\n").join(blocks) + "\n"
     tok = Tokenizer.train(text, cap=cap)
@@ -671,7 +1003,7 @@ def build_val_bundle(tokenizer: Tokenizer, cap: int = 4500) -> CorpusBundle:
     """Held-out trajectories (different RNG seed, shared tokenizer) used to
     measure validation loss — a true generalization signal, since every
     question/number/passage combination in it was never trained on."""
-    blocks = build_blocks(99)
+    blocks = build_blocks(99, scale=0.35)
     text = ("\n" + SYS_LINE + "\n").join(blocks) + "\n"
     ids = tokenizer.encode(text)
     sep_ids = tokenizer.encode("\n" + SYS_LINE + "\n")

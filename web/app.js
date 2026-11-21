@@ -28,7 +28,11 @@ SUGGESTIONS.forEach((s) => {
   const b = document.createElement("button");
   b.type = "button";
   b.textContent = s;
-  b.onclick = () => { input.value = s; input.focus(); };
+  b.onclick = () => {
+    if (busy) return;
+    input.value = "";
+    sendUser(s);   // chips send immediately
+  };
   suggestBox.appendChild(b);
 });
 
@@ -46,6 +50,16 @@ async function refreshStatus() {
 function renderStatus(s) {
   const m = s.model;
   $("pill-params").textContent = `${(m.params / 1e6).toFixed(2)}M params · vocab ${m.vocab}`;
+  $("pill-corpus").textContent =
+    `📚 ${Math.round(m.corpus_tokens / 1000)}K tokens · ${s.knowledge_passages} facts`;
+
+  // model info card
+  $("mi-layers").textContent = m.layers ?? "—";
+  $("mi-heads").textContent = m.heads ?? "—";
+  $("mi-seq").textContent = m.seq_len ?? "—";
+  $("mi-vocab").textContent = (m.vocab ?? 0).toLocaleString();
+  $("mi-params").textContent = (m.params / 1e6).toFixed(2) + "M";
+  $("mi-corpus").textContent = (m.corpus_tokens / 1e6).toFixed(2) + "M tok";
   const neuralPill = $("pill-model");
   if (m.neural_ready) {
     neuralPill.textContent = "model: neural ready";
@@ -163,11 +177,14 @@ function createAssistant() {
   const el = document.createElement("div");
   el.className = "msg assistant";
   el.innerHTML = `
-    <div class="bubble">
-      <div class="trace"></div>
-      <p class="answer cursor"></p>
-    </div>
-    <span class="meta">…</span>`;
+    <span class="avatar">✦</span>
+    <div class="msg-body">
+      <div class="bubble">
+        <div class="trace"><div class="thinking"><i></i><i></i><i></i> thinking …</div></div>
+        <p class="answer cursor"></p>
+      </div>
+      <span class="meta">…</span>
+    </div>`;
   messages.appendChild(el);
   scrollDown();
   return {
@@ -175,6 +192,7 @@ function createAssistant() {
     trace: el.querySelector(".trace"),
     answer: el.querySelector(".answer"),
     meta: el.querySelector(".meta"),
+    t0: performance.now(),
   };
 }
 
@@ -238,11 +256,9 @@ async function sendUser(msg) {
 function handleEvent(ev, node, push) {
   switch (ev.type) {
     case "trace": {
-      // replace the initial "thinking …" placeholder on first real trace
-      if (node.trace.childElementCount === 1 &&
-          node.trace.firstElementChild.textContent === "thinking …") {
-        node.trace.innerHTML = "";
-      }
+      // replace the "thinking …" placeholder on the first real trace
+      const ph = node.trace.firstElementChild;
+      if (ph && ph.classList.contains("thinking")) node.trace.innerHTML = "";
       addTrace(node, ev.kind, ev.name || "", ev.text);
       break;
     }
@@ -256,7 +272,9 @@ function handleEvent(ev, node, push) {
     }
     case "done": {
       const eng = ev.engine || "?";
+      const secs = node.t0 ? ((performance.now() - node.t0) / 1000).toFixed(2) : null;
       node.meta.innerHTML = `engine: <span class="eng-${eng}">${eng}</span>` +
+        (secs ? ` · ${secs}s` : "") +
         (ev.answer == null ? " · no answer" : "");
       if (ev.answer != null && !node._full) {
         node._full = ev.answer;

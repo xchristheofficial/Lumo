@@ -17,6 +17,7 @@
       </div>
     </div>
     <div class="pills">
+      <span class="pill" id="pill-corpus" title="training corpus">📚 …</span>
       <span class="pill" id="pill-params" title="model parameters">… params</span>
       <span class="pill" id="pill-model">model: loading</span>
       <span class="pill" id="pill-train">training: —</span>
@@ -38,14 +39,17 @@
 
       <div class="messages" id="messages">
         <div class="msg assistant">
-          <div class="bubble">
-            <p>Hi — I'm <b>Lumo</b>, an AI agent built entirely from scratch: a tiny
-            transformer in NumPy, a ReAct-style tool loop, and a local knowledge base.
-            Nothing calls out to OpenAI, Anthropic, or any other provider.</p>
-            <p>Training starts automatically on first boot — watch the loss drop in the
-            panel on the right, then ask me something.</p>
+          <span class="avatar">✦</span>
+          <div class="msg-body">
+            <div class="bubble">
+              <p>Hi — I'm <b>Lumo</b>, an AI agent built entirely from scratch: a tiny
+              transformer in NumPy, a ReAct-style tool loop, and a local knowledge base
+              of <b>466 facts</b>. Nothing calls out to OpenAI, Anthropic, or any other provider.</p>
+              <p>Training starts automatically on first boot — watch the loss drop in the
+              panel on the right, then ask me something.</p>
+            </div>
+            <span class="meta">boot</span>
           </div>
-          <span class="meta">boot</span>
         </div>
       </div>
 
@@ -104,6 +108,14 @@
         <p>Lumo runs 100% in this sandbox: corpus → tokenizer → transformer →
         agent loop → web UI. Model weights never leave the machine, and there are
         no API keys anywhere in the codebase.</p>
+        <div class="model-grid" id="model-grid">
+          <div><span>layers</span><b id="mi-layers">—</b></div>
+          <div><span>heads</span><b id="mi-heads">—</b></div>
+          <div><span>seq len</span><b id="mi-seq">—</b></div>
+          <div><span>vocab</span><b id="mi-vocab">—</b></div>
+          <div><span>params</span><b id="mi-params">—</b></div>
+          <div><span>corpus</span><b id="mi-corpus">—</b></div>
+        </div>
         <p class="dim" id="boot-info"></p>
       </div>
     </aside>

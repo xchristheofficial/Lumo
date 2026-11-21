@@ -191,6 +191,21 @@ def rule_plan(msg: str) -> Plan:
         p.actions.append(("search", re.sub(r"[^a-z0-9\s]", " ", t)))
         return p
 
+    # --- last resort: strong knowledge match without a question word --------- #
+    # Bare topic phrases like "capital of kenya" or "element gold" have no
+    # interrogative — if the knowledge base recognizes them, search it.
+    try:
+        from .tools import _KB
+        if _KB is not None:
+            _q = re.sub(r"[^a-z0-9\s]", " ", t)
+            _text, _score = _KB.search(_q)
+            if _score >= 0.35:
+                p.thoughts.append("i will search my knowledge base .")
+                p.actions.append(("search", _q))
+                return p
+    except Exception:  # noqa: BLE001
+        pass
+
     # --- last resort --------------------------------------------------------- #
     p.thoughts.append("i am not sure about that one .")
     p.direct_answer = ("i am a small offline agent , so my knowledge is limited to my tools : "
