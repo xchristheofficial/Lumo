@@ -9,8 +9,9 @@ const sendBtn = $("send-btn");
 
 let enginePref = "auto";
 let busy = false;
-let trainState = { running: false, step: 0, max_steps: 0, loss: null };
-let lossHistory = []; // [step, loss]
+let trainState = { running: false, step: 0, max_steps: 0, loss: null, val_loss: null };
+let lossHistory = [];   // [step, loss]
+let valHistory = [];    // [step, val_loss]
 
 const SUGGESTIONS = [
   "what is 17 * 23 ?",
@@ -73,6 +74,10 @@ function renderStatus(s) {
       lossHistory = s.training.history.slice();
       drawChart();
     }
+    if (Array.isArray(s.training.val_history) && s.training.val_history.length) {
+      valHistory = s.training.val_history.slice();
+      drawChart();
+    }
     paintTraining();
   }
 
@@ -117,6 +122,23 @@ function escapeHtml(str) {
   return String(str)
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+/* ── typewriter reveal of streamed answers ─────────────────── */
+function animateReveal(node) {
+  if (node._anim) return;
+  node._anim = setInterval(() => {
+    const full = node._full || "";
+    const shown = node.answer.textContent.length;
+    if (shown >= full.length) { stopReveal(node); return; }
+    // reveal a few characters per tick (~200 chars/sec)
+    node.answer.textContent = full.slice(0, Math.min(full.length, shown + 4));
+    scrollDown();
+  }, 16);
+}
+
+function stopReveal(node) {
+  if (node._anim) { clearInterval(node._anim); node._anim = null; }
 }
 
 /* ── chat ────────────────────────────────────────────────────── */
@@ -203,7 +225,9 @@ async function sendUser(msg) {
   }
 
   node.answer.classList.remove("cursor");
-  if (!answer) node.answer.textContent = node.answer.textContent || "…";
+  stopReveal(node);
+  if (node._full) node.answer.textContent = node._full;
+  else if (!node.answer.textContent) node.answer.textContent = "…";
   busy = false;
   sendBtn.disabled = false;
   input.focus();
@@ -225,7 +249,8 @@ function handleEvent(ev, node, push) {
     case "token": {
       node.answer.classList.remove("cursor");
       push(ev.text);
-      node.answer.textContent = node.answer.textContent + ev.text;
+      node._full = (node._full || "") + ev.text;
+      animateReveal(node);
       scrollDown();
       break;
     }
@@ -233,9 +258,12 @@ function handleEvent(ev, node, push) {
       const eng = ev.engine || "?";
       node.meta.innerHTML = `engine: <span class="eng-${eng}">${eng}</span>` +
         (ev.answer == null ? " · no answer" : "");
-      if (ev.answer != null && !node.answer.textContent) {
-        node.answer.textContent = ev.answer;
+      if (ev.answer != null && !node._full) {
+        node._full = ev.answer;
       }
+      // flush any in-progress reveal so the final text is exact
+      stopReveal(node);
+      if (node._full) node.answer.textContent = node._full;
       break;
     }
     case "error":
@@ -307,8 +335,9 @@ function paintTraining() {
   $("btn-stop").disabled = !st.running;
   $("btn-quick").disabled = st.running;
   $("btn-full").disabled = st.running;
-  $("st-step").textContent = st.step ?? 0;
+  $("st-step").textContent = st.lifetime_step ?? st.step ?? 0;
   $("st-loss").textContent = st.loss ?? "—";
+  $("st-val").textContent = st.val_loss ?? "—";
   $("st-tps").textContent = st.tokens_per_s ?? "—";
   $("st-elapsed").textContent = st.elapsed != null ? `${st.elapsed}s` : "—";
   const bar = $("progress-bar");
@@ -364,14 +393,15 @@ function drawChart() {
   }
   const xs = lossHistory.map((p) => p[0]);
   const ys = lossHistory.map((p) => p[1]);
+  const vys = valHistory.map((p) => p[1]);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
-  let minY = Math.min(...ys), maxY = Math.max(...ys);
+  let minY = Math.min(...ys, ...vys), maxY = Math.max(...ys, ...vys);
   if (maxY - minY < 1e-4) { maxY = minY + 1; }
   const pad = 14;
   const X = (x) => pad + ((x - minX) / Math.max(1, maxX - minX)) * (w - 2 * pad);
   const Y = (y) => pad + (1 - (y - minY) / (maxY - minY)) * (h - 2 * pad);
 
-  // area
+  // area (train)
   ctx.beginPath();
   lossHistory.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
   ctx.lineTo(X(maxX), h - pad); ctx.lineTo(X(minX), h - pad); ctx.closePath();
@@ -380,7 +410,25 @@ function drawChart() {
   grad.addColorStop(1, "rgba(94,234,212,0)");
   ctx.fillStyle = grad; ctx.fill();
 
-  // line
+  // validation line (held-out loss, violet dashed)
+  if (valHistory.length >= 1) {
+    ctx.beginPath();
+    valHistory.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
+    ctx.strokeStyle = "#a78bfa";
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.shadowColor = "rgba(167,139,250,.8)";
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
+    const vl = valHistory[valHistory.length - 1];
+    ctx.beginPath();
+    ctx.arc(X(vl[0]), Y(vl[1]), 3, 0, Math.PI * 2);
+    ctx.fillStyle = "#a78bfa"; ctx.fill();
+  }
+
+  // train line
   ctx.beginPath();
   lossHistory.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
   ctx.strokeStyle = "#5eead4";
@@ -390,21 +438,28 @@ function drawChart() {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // last point
+  // last train point
   const last = lossHistory[lossHistory.length - 1];
   ctx.beginPath();
   ctx.arc(X(last[0]), Y(last[1]), 3.5, 0, Math.PI * 2);
-  ctx.fillStyle = "#a78bfa"; ctx.fill();
+  ctx.fillStyle = "#5eead4"; ctx.fill();
 
   // labels
   ctx.fillStyle = "rgba(223,231,255,.85)";
   ctx.font = "11px ui-monospace, monospace";
   ctx.fillText(maxY.toFixed(2), 6, 14);
   ctx.fillText(minY.toFixed(2), 6, h - 6);
-  ctx.fillStyle = "rgba(167,139,250,.95)";
   ctx.textAlign = "right";
   ctx.fillText(`step ${last[0]}`, w - 8, 14);
   ctx.textAlign = "left";
+
+  // legend
+  ctx.font = "10px ui-monospace, monospace";
+  ctx.fillStyle = "#5eead4"; ctx.fillRect(10, h - 16, 8, 3);
+  ctx.fillText("train", 22, h - 11);
+  ctx.fillStyle = "#a78bfa";
+  ctx.fillRect(66, h - 16, 8, 3);
+  ctx.fillText("val", 78, h - 11);
 }
 drawChart();
 
@@ -428,6 +483,11 @@ function connectTraining() {
       };
       lossHistory.push([ev.step, ev.loss]);
       if (lossHistory.length > 2500) lossHistory = lossHistory.slice(-2500);
+      if (ev.val_loss != null) {
+        trainState.val_loss = ev.val_loss;
+        valHistory.push([ev.step, ev.val_loss]);
+        if (valHistory.length > 600) valHistory = valHistory.slice(-600);
+      }
       paintTraining();
       drawChart();
     } else if (ev.type === "done") {

@@ -363,6 +363,17 @@ class NeuralAgent:
                 if prefix and prefix not in ans_norm:
                     return NeuralResult(ok=False, trace=trace,
                                         error="answer doesn't reflect the passage")
+        # For clear intents the deterministic planner knows the right tool —
+        # if the model reached for a different one (or none), reject it.
+        expected = rule_plan(user_msg)
+        if expected.actions and not expected.fallback:
+            exp_tool = expected.actions[0][0]
+            first_tool = next((n for k, n, _ in trace if k == "action"), None)
+            if first_tool != exp_tool:
+                return NeuralResult(ok=False, trace=trace,
+                                    error=f"tool mismatch: expected "
+                                          f"'{exp_tool}', model used "
+                                          f"'{first_tool}'")
         return NeuralResult(ok=True, answer=answer, trace=trace)
 
 
@@ -403,6 +414,7 @@ class Agent:
     def __init__(self, neural: NeuralAgent):
         self.neural = neural
         self.history: list[dict] = []
+        self.record = True  # set False to disable experience recording
 
     def reload_model(self, model: TinyGPT) -> None:
         self.neural.model = model
@@ -522,7 +534,7 @@ class Agent:
 
         # Write the verified exchange down so the autopilot trainer can
         # learn from it while you're away (experience replay).
-        if answer and a_lines:
+        if answer and a_lines and self.record:
             try:
                 from . import experience
 

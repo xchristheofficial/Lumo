@@ -151,9 +151,19 @@ def tool_recall(arg: str) -> str:
 # --------------------------------------------------------------------------- #
 
 class KnowledgeBase:
+    # words too common to discriminate between passages
+    STOP = {"the", "a", "an", "of", "to", "in", "on", "and", "or", "is",
+            "are", "was", "were", "it", "its", "for", "with", "that",
+            "this", "these", "those", "from", "by", "as", "at", "be",
+            "what", "which", "who", "whom", "how", "when", "where",
+            "tell", "about", "me", "you", "your", "my", "do", "does",
+            "did", "can", "could", "please", "explain", "give", "some"}
+
     def __init__(self, passages: list[tuple[str, str]]):
         self.passages = [p for _, p in passages]
-        self.docs = [self._tok(p) for p in self.passages]
+        # Index keywords + body so topic terms in the keyword list count
+        # double (the display text stays the body only).
+        self.docs = [self._tok(f"{kw} {body}") for kw, body in passages]
         # df / idf
         df: dict[str, int] = {}
         for toks in self.docs:
@@ -174,14 +184,15 @@ class KnowledgeBase:
         norms[norms == 0] = 1.0
         self.matrix /= norms
 
-    @staticmethod
-    def _tok(text: str) -> list[str]:
-        # light stemming so "giraffes" matches "giraffe" (applied to both
-        # the index and queries, so it stays consistent)
+    @classmethod
+    def _tok(cls, text: str) -> list[str]:
+        # light stemming + stopword removal (applied to index AND queries)
         out = []
         for t in re.findall(r"[a-z0-9]+", text.lower()):
             if len(t) > 3 and t.endswith("s") and not t.endswith("ss"):
                 t = t[:-1]
+            if t in cls.STOP or len(t) == 1:
+                continue
             out.append(t)
         return out
 
